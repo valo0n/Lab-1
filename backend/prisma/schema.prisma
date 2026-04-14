@@ -1,0 +1,399 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model activity_logs {
+  id            Int      @id @default(autoincrement())
+  user_id       Int?
+  veprimi       String   @db.VarChar(100)
+  entiteti      String?  @db.VarChar(100)
+  entiteti_id   Int?
+  pershkrimi    String?  @db.VarChar(500)
+  ip_address    String?  @db.VarChar(50)
+  data_veprimit DateTime @default(now()) @db.DateTime(0)
+  users         users?   @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_log_user")
+
+  @@index([user_id], map: "fk_log_user")
+}
+
+model cart_items {
+  id           Int       @id @default(autoincrement())
+  klienti_id   Int
+  produkti_id  Int
+  sasia        Int       @default(1)
+  data_shtimit DateTime  @default(now()) @db.DateTime(0)
+  customers    customers @relation(fields: [klienti_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cart_customers")
+  products     products  @relation(fields: [produkti_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_cart_products")
+
+  @@unique([klienti_id, produkti_id], map: "uq_cart")
+  @@index([produkti_id], map: "fk_cart_products")
+}
+
+model categories {
+  id                 Int          @id @default(autoincrement())
+  emertimi           String       @db.VarChar(150)
+  pershkrimi         String?      @db.VarChar(500)
+  kategoria_prind_id Int?
+  ikona              String?      @db.VarChar(200)
+  foto               String?      @db.VarChar(500)
+  aktiv              Boolean      @default(true)
+  categories         categories?  @relation("categoriesTocategories", fields: [kategoria_prind_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_categories_parent")
+  other_categories   categories[] @relation("categoriesTocategories")
+  products           products[]
+
+  @@index([kategoria_prind_id], map: "fk_categories_parent")
+}
+
+model coupons {
+  id                 Int      @id @default(autoincrement())
+  kodi               String   @unique(map: "kodi") @db.VarChar(50)
+  pershkrimi         String?  @db.VarChar(255)
+  lloji_zbritjes     String   @db.VarChar(20)
+  vlera              Decimal  @db.Decimal(18, 2)
+  data_fillimit      DateTime @db.Date
+  data_skadimit      DateTime @db.Date
+  perdorimet_max     Int?
+  perdorimet_aktuale Int      @default(0)
+  aktiv              Boolean  @default(true)
+  orders             orders[]
+}
+
+model customers {
+  id                Int                @id @default(autoincrement())
+  user_id           Int?
+  emri              String             @db.VarChar(100)
+  mbiemri           String             @db.VarChar(100)
+  email             String             @unique(map: "email") @db.VarChar(200)
+  telefoni          String?            @db.VarChar(50)
+  adresa            String?            @db.VarChar(300)
+  qyteti            String?            @db.VarChar(100)
+  kodi_postar       String?            @db.VarChar(20)
+  shteti            String?            @db.VarChar(100)
+  data_regjistrimit DateTime           @default(now()) @db.DateTime(0)
+  cart_items        cart_items[]
+  users             users?             @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_customers_users")
+  orders            orders[]
+  product_reviews   product_reviews[]
+  service_requests  service_requests[]
+  warranties        warranties[]
+  wishlists         wishlists[]
+
+  @@index([user_id], map: "fk_customers_users")
+}
+
+model inventory {
+  id             Int      @id @default(autoincrement())
+  produkti_id    Int
+  sasia_hyrje    Int      @default(0)
+  sasia_dalje    Int      @default(0)
+  data_levizjes  DateTime @default(now()) @db.DateTime(0)
+  lloji_levizjes String   @db.VarChar(50)
+  referenca      String?  @db.VarChar(100)
+  products       products @relation(fields: [produkti_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_inventory_products")
+
+  @@index([produkti_id], map: "idx_inventory_produkti")
+}
+
+model notifications {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  titulli       String   @db.VarChar(200)
+  mesazhi       String?  @db.Text
+  lloji         String   @db.VarChar(50)
+  e_lexuar      Boolean  @default(false)
+  data_krijimit DateTime @default(now()) @db.DateTime(0)
+  users         users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notif_user")
+
+  @@index([user_id], map: "idx_notif_user")
+}
+
+model order_details {
+  id          Int      @id @default(autoincrement())
+  porosia_id  Int
+  produkti_id Int
+  sasia       Int
+  cmimi_njesi Decimal  @db.Decimal(18, 2)
+  shuma       Decimal  @db.Decimal(18, 2)
+  orders      orders   @relation(fields: [porosia_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_od_orders")
+  products    products @relation(fields: [produkti_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_od_products")
+
+  @@index([porosia_id], map: "idx_od_porosia")
+  @@index([produkti_id], map: "idx_od_produkti")
+}
+
+model orders {
+  id               Int             @id @default(autoincrement())
+  klienti_id       Int
+  data_porosis     DateTime        @default(now()) @db.DateTime(0)
+  shuma_totale     Decimal         @db.Decimal(18, 2)
+  zbritja          Decimal         @default(0.00) @db.Decimal(18, 2)
+  metoda_pageses   String          @db.VarChar(50)
+  statusi_porosis  String          @db.VarChar(50)
+  adresa_dorezimit String?         @db.VarChar(300)
+  coupon_id        Int?
+  order_details    order_details[]
+  coupons          coupons?        @relation(fields: [coupon_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_coupons")
+  customers        customers       @relation(fields: [klienti_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_customers")
+  payments         payments[]
+  shipments        shipments[]
+  warranties       warranties[]
+
+  @@index([coupon_id], map: "fk_orders_coupons")
+  @@index([data_porosis], map: "idx_orders_data")
+  @@index([klienti_id], map: "idx_orders_klienti")
+}
+
+model payments {
+  id             Int      @id @default(autoincrement())
+  porosia_id     Int
+  shuma          Decimal  @db.Decimal(18, 2)
+  metoda         String   @db.VarChar(50)
+  statusi        String   @db.VarChar(50)
+  transaction_id String?  @db.VarChar(200)
+  data_pageses   DateTime @default(now()) @db.DateTime(0)
+  orders         orders   @relation(fields: [porosia_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_payments_orders")
+
+  @@index([porosia_id], map: "idx_payments_porosia")
+}
+
+model product_images {
+  id          Int      @id @default(autoincrement())
+  produkti_id Int
+  url         String   @db.VarChar(500)
+  rendi       Int      @default(0)
+  products    products @relation(fields: [produkti_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pi_products")
+
+  @@index([produkti_id], map: "fk_pi_products")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model product_reviews {
+  id              Int       @id @default(autoincrement())
+  produkti_id     Int
+  klienti_id      Int
+  vleresimi       Int
+  komenti         String?   @db.Text
+  data_vleresimit DateTime  @default(now()) @db.DateTime(0)
+  aprovuar        Boolean   @default(true)
+  customers       customers @relation(fields: [klienti_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_reviews_customers")
+  products        products  @relation(fields: [produkti_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_reviews_products")
+
+  @@index([klienti_id], map: "fk_reviews_customers")
+  @@index([produkti_id], map: "idx_reviews_produkti")
+}
+
+model products {
+  id                     Int                      @id @default(autoincrement())
+  emertimi               String                   @db.VarChar(200)
+  kategoria_id           Int
+  marka                  String?                  @db.VarChar(100)
+  modeli                 String?                  @db.VarChar(100)
+  sku                    String?                  @unique(map: "sku") @db.VarChar(50)
+  pershkrimi             String?                  @db.Text
+  cmimi                  Decimal                  @db.Decimal(18, 2)
+  cmimi_zbritjes         Decimal?                 @db.Decimal(18, 2)
+  sasia_stokut           Int                      @default(0)
+  garancia_muaj          Int                      @default(0)
+  foto_kryesore          String?                  @db.VarChar(500)
+  pesha_kg               Decimal?                 @db.Decimal(10, 2)
+  data_krijimit          DateTime                 @default(now()) @db.DateTime(0)
+  aktiv                  Boolean                  @default(true)
+  cart_items             cart_items[]
+  inventory              inventory[]
+  order_details          order_details[]
+  product_images         product_images[]
+  product_reviews        product_reviews[]
+  categories             categories               @relation(fields: [kategoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_categories")
+  purchase_order_details purchase_order_details[]
+  service_requests       service_requests[]
+  warranties             warranties[]
+  wishlists              wishlists[]
+
+  @@index([kategoria_id], map: "idx_products_kategoria")
+}
+
+model purchase_order_details {
+  id                Int             @id @default(autoincrement())
+  purchase_order_id Int
+  produkti_id       Int
+  sasia             Int
+  cmimi_njesi       Decimal         @db.Decimal(18, 2)
+  shuma             Decimal         @db.Decimal(18, 2)
+  purchase_orders   purchase_orders @relation(fields: [purchase_order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_pod_po")
+  products          products        @relation(fields: [produkti_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_pod_products")
+
+  @@index([purchase_order_id], map: "fk_pod_po")
+  @@index([produkti_id], map: "fk_pod_products")
+}
+
+model purchase_orders {
+  id                     Int                      @id @default(autoincrement())
+  furnitori_id           Int
+  data_porosis           DateTime                 @default(now()) @db.DateTime(0)
+  shuma_totale           Decimal                  @db.Decimal(18, 2)
+  statusi                String                   @db.VarChar(50)
+  purchase_order_details purchase_order_details[]
+  suppliers              suppliers                @relation(fields: [furnitori_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_po_suppliers")
+
+  @@index([furnitori_id], map: "idx_po_furnitori")
+}
+
+model refresh_tokens {
+  id                Int       @id @default(autoincrement())
+  user_id           Int
+  token             String    @db.VarChar(500)
+  expires_at        DateTime  @db.DateTime(0)
+  created_at        DateTime  @default(now()) @db.DateTime(0)
+  revoked_at        DateTime? @db.DateTime(0)
+  replaced_by_token String?   @db.VarChar(500)
+  users             users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_rt_user")
+
+  @@index([user_id], map: "fk_rt_user")
+  @@index([token], map: "idx_refresh_token")
+}
+
+model roles {
+  id         Int          @id @default(autoincrement())
+  name       String       @unique(map: "name") @db.VarChar(50)
+  pershkrimi String?      @db.VarChar(255)
+  user_roles user_roles[]
+}
+
+model service_requests {
+  id                   Int         @id @default(autoincrement())
+  klienti_id           Int
+  produkti_id          Int
+  garancia_id          Int?
+  pershkrimi_problemit String      @db.Text
+  data_kerkeses        DateTime    @default(now()) @db.DateTime(0)
+  statusi              String      @db.VarChar(50)
+  tekniku_id           Int?
+  kostoja              Decimal?    @db.Decimal(18, 2)
+  data_perfundimit     DateTime?   @db.DateTime(0)
+  customers            customers   @relation(fields: [klienti_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sr_customers")
+  products             products    @relation(fields: [produkti_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sr_products")
+  users                users?      @relation(fields: [tekniku_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sr_teknik")
+  warranties           warranties? @relation(fields: [garancia_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_sr_warranties")
+
+  @@index([garancia_id], map: "fk_sr_warranties")
+  @@index([klienti_id], map: "idx_sr_klienti")
+  @@index([produkti_id], map: "idx_sr_produkti")
+  @@index([tekniku_id], map: "idx_sr_tekniku")
+}
+
+model shipments {
+  id              Int       @id @default(autoincrement())
+  porosia_id      Int
+  tracking_number String?   @db.VarChar(100)
+  transportuesi   String?   @db.VarChar(100)
+  statusi         String    @db.VarChar(50)
+  data_dergimit   DateTime? @db.DateTime(0)
+  data_dorezimit  DateTime? @db.DateTime(0)
+  orders          orders    @relation(fields: [porosia_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_ship_orders")
+
+  @@index([porosia_id], map: "idx_ship_porosia")
+}
+
+model suppliers {
+  id              Int               @id @default(autoincrement())
+  emertimi        String            @db.VarChar(200)
+  kontakti        String?           @db.VarChar(200)
+  email           String?           @db.VarChar(200)
+  telefoni        String?           @db.VarChar(50)
+  adresa          String?           @db.VarChar(300)
+  vendi           String?           @db.VarChar(100)
+  aktiv           Boolean           @default(true)
+  purchase_orders purchase_orders[]
+}
+
+model user_claims {
+  id          Int     @id @default(autoincrement())
+  user_id     Int
+  claim_type  String  @db.VarChar(200)
+  claim_value String? @db.VarChar(500)
+  users       users   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_uc_user")
+
+  @@index([user_id], map: "fk_uc_user")
+}
+
+model user_roles {
+  user_id Int
+  role_id Int
+  roles   roles @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ur_role")
+  users   users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ur_user")
+
+  @@id([user_id, role_id])
+  @@index([role_id], map: "fk_ur_role")
+}
+
+model user_tokens {
+  id             Int     @id @default(autoincrement())
+  user_id        Int
+  login_provider String  @db.VarChar(100)
+  name           String  @db.VarChar(100)
+  value          String? @db.Text
+  users          users   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_ut_user")
+
+  @@index([user_id], map: "fk_ut_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                Int                @id @default(autoincrement())
+  user_name         String             @unique(map: "user_name") @db.VarChar(100)
+  email             String             @unique(map: "email") @db.VarChar(200)
+  email_confirmed   Boolean            @default(false)
+  password_hash     String             @db.VarChar(255)
+  emri_plote        String?            @db.VarChar(200)
+  telefoni          String?            @db.VarChar(50)
+  foto_profili      String?            @db.VarChar(500)
+  data_regjistrimit DateTime           @default(now()) @db.DateTime(0)
+  last_login        DateTime?          @db.DateTime(0)
+  aktiv             Boolean            @default(true)
+  activity_logs     activity_logs[]
+  customers         customers[]
+  notifications     notifications[]
+  refresh_tokens    refresh_tokens[]
+  service_requests  service_requests[]
+  user_claims       user_claims[]
+  user_roles        user_roles[]
+  user_tokens       user_tokens[]
+
+  @@index([email], map: "idx_users_email")
+}
+
+model warranties {
+  id               Int                @id @default(autoincrement())
+  produkti_id      Int
+  klienti_id       Int
+  porosia_id       Int?
+  data_fillimit    DateTime           @db.Date
+  data_skadimit    DateTime           @db.Date
+  lloji            String             @db.VarChar(50)
+  statusi          String             @db.VarChar(50)
+  service_requests service_requests[]
+  customers        customers          @relation(fields: [klienti_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warranties_customers")
+  orders           orders?            @relation(fields: [porosia_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warranties_orders")
+  products         products           @relation(fields: [produkti_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_warranties_products")
+
+  @@index([porosia_id], map: "fk_warranties_orders")
+  @@index([klienti_id], map: "idx_warranties_klienti")
+  @@index([produkti_id], map: "idx_warranties_produkti")
+}
+
+model wishlists {
+  id           Int       @id @default(autoincrement())
+  klienti_id   Int
+  produkti_id  Int
+  data_shtimit DateTime  @default(now()) @db.DateTime(0)
+  customers    customers @relation(fields: [klienti_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_wl_customers")
+  products     products  @relation(fields: [produkti_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_wl_products")
+
+  @@unique([klienti_id, produkti_id], map: "uq_wishlist")
+  @@index([produkti_id], map: "fk_wl_products")
+}
