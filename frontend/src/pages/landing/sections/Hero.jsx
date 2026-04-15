@@ -1,6 +1,6 @@
 /* Hero — auto-playing banner with Tailwind classes */
 import { useState, useEffect } from "react";
-import { PRODUCTS } from "../../../data/Product";
+import { PRODUCTS } from "../../../data/products";
 
 /* Three slides: each has a tag, headline, subtitle, CTA text, and a Tailwind gradient class */
 const SLIDES = [
