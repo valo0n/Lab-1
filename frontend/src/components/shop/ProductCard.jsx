@@ -1,3 +1,8 @@
+/* ProductCard — kart produkti me funksionin Shto ne Shporte */
+import { useState } from "react";
+import { useCart } from "../../context/CartContext";
+
+/* Komponent i ndare per yjet — perdoret edhe ne pjese te tjera */
 export function Stars({ v = 0, size = "text-xs" }) {
   return (
     <span className={size}>
@@ -13,12 +18,14 @@ export function Stars({ v = 0, size = "text-xs" }) {
   );
 }
 
-/* ProductCard: individual product tile used in all grids */
 export default function ProductCard({ product: p }) {
-  /* Discount % calculated from old vs current price */
+  const { addToCart } = useCart();
+  const [added, setAdded] = useState(false);
+
+  /* Llogarit perqindjen e zbritjes */
   const disc = p.old ? Math.round(((p.old - p.price) / p.old) * 100) : null;
 
-  /* Badge background color — red for discounts, amber for TOP, green for new */
+  /* Ngjyra e badge sipas tipit */
   const badgeCls = p.badge
     ? p.badge.startsWith("-")
       ? "bg-danger"
@@ -27,13 +34,21 @@ export default function ProductCard({ product: p }) {
         : "bg-primary"
     : "";
 
+  /* Trajto klikun e Shto ne Shporte */
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(p);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
+
   return (
     <div className="bg-white rounded-xl border border-bg shadow-card hover:shadow-hover hover:-translate-y-1 transition-all duration-200 overflow-hidden cursor-pointer">
-      {/* ── Image area ── */}
+      {/* Foto area */}
       <div className="relative flex items-center justify-center bg-bg h-40">
         <span className="text-6xl select-none">{p.emoji}</span>
 
-        {/* Badge — only rendered when badge exists */}
         {p.badge && (
           <span
             className={`absolute top-2 left-2 ${badgeCls} text-white text-xs font-black px-2 py-0.5 rounded-lg`}
@@ -43,7 +58,7 @@ export default function ProductCard({ product: p }) {
         )}
       </div>
 
-      {/* ── Info area ── */}
+      {/* Info area */}
       <div className="p-3">
         <p className="text-xs font-black text-muted mb-0.5">{p.brand}</p>
 
@@ -51,27 +66,22 @@ export default function ProductCard({ product: p }) {
           {p.name}
         </h3>
 
-        {/* Stars + review count */}
         <div className="flex items-center gap-1.5 mb-2">
           <Stars v={p.rating} />
           <span className="text-xs text-muted">({p.reviews})</span>
         </div>
 
-        {/* Price row */}
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-1.5">
-            {/* Current price in green */}
             <span className="text-base font-black text-primary font-lato">
               €{p.price.toLocaleString()}
             </span>
-            {/* Old price with strikethrough — only if discounted */}
             {p.old && (
               <span className="text-xs text-gray-300 line-through">
                 €{p.old.toLocaleString()}
               </span>
             )}
           </div>
-          {/* Discount pill — only if discounted */}
           {disc && (
             <span className="text-xs font-black text-primary bg-bg px-1.5 py-0.5 rounded-lg">
               -{disc}%
@@ -79,9 +89,14 @@ export default function ProductCard({ product: p }) {
           )}
         </div>
 
-        {/* Add to Cart button — static, no real action */}
-        <button className="w-full bg-primary hover:bg-green-600 text-white text-sm font-black py-2 rounded-lg transition-colors">
-          + Shto në Shportë
+        {/* Add to Cart — me funksion te vertete */}
+        <button
+          onClick={handleAddToCart}
+          className={`w-full text-white text-sm font-black py-2 rounded-lg transition-all ${
+            added ? "bg-green-700 scale-95" : "bg-primary hover:bg-green-600"
+          }`}
+        >
+          {added ? "✓ U Shtua!" : "+ Shto në Shportë"}
         </button>
       </div>
     </div>
