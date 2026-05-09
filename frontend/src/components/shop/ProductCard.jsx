@@ -1,8 +1,8 @@
-/* ProductCard — kart produkti me funksionin Shto ne Shporte */
+/* ProductCard — kart produkti me Cart dhe Wishlist funksionale */
 import { useState } from "react";
 import { useCart } from "../../context/CartContext";
+import { useWishlist } from "../../context/WishlistContext";
 
-/* Komponent i ndare per yjet — perdoret edhe ne pjese te tjera */
 export function Stars({ v = 0, size = "text-xs" }) {
   return (
     <span className={size}>
@@ -20,12 +20,13 @@ export function Stars({ v = 0, size = "text-xs" }) {
 
 export default function ProductCard({ product: p }) {
   const { addToCart } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
   const [added, setAdded] = useState(false);
 
-  /* Llogarit perqindjen e zbritjes */
+  const inWishlist = isInWishlist(p.id);
+
   const disc = p.old ? Math.round(((p.old - p.price) / p.old) * 100) : null;
 
-  /* Ngjyra e badge sipas tipit */
   const badgeCls = p.badge
     ? p.badge.startsWith("-")
       ? "bg-danger"
@@ -34,7 +35,6 @@ export default function ProductCard({ product: p }) {
         : "bg-primary"
     : "";
 
-  /* Trajto klikun e Shto ne Shporte */
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -43,9 +43,14 @@ export default function ProductCard({ product: p }) {
     setTimeout(() => setAdded(false), 1500);
   };
 
+  const handleWishlist = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleWishlist(p);
+  };
+
   return (
     <div className="bg-white rounded-xl border border-bg shadow-card hover:shadow-hover hover:-translate-y-1 transition-all duration-200 overflow-hidden cursor-pointer">
-      {/* Foto area */}
       <div className="relative flex items-center justify-center bg-bg h-40">
         <span className="text-6xl select-none">{p.emoji}</span>
 
@@ -56,9 +61,16 @@ export default function ProductCard({ product: p }) {
             {p.badge}
           </span>
         )}
+
+        {/* Wishlist button — funksional */}
+        <button
+          onClick={handleWishlist}
+          className="absolute top-2 right-2 w-9 h-9 bg-white rounded-full flex items-center justify-center shadow hover:bg-red-50 transition-all border-0 cursor-pointer text-lg"
+        >
+          {inWishlist ? "❤️" : "🤍"}
+        </button>
       </div>
 
-      {/* Info area */}
       <div className="p-3">
         <p className="text-xs font-black text-muted mb-0.5">{p.brand}</p>
 
@@ -89,10 +101,9 @@ export default function ProductCard({ product: p }) {
           )}
         </div>
 
-        {/* Add to Cart — me funksion te vertete */}
         <button
           onClick={handleAddToCart}
-          className={`w-full text-white text-sm font-black py-2 rounded-lg transition-all ${
+          className={`w-full text-white text-sm font-black py-2 rounded-lg transition-all border-0 cursor-pointer ${
             added ? "bg-green-700 scale-95" : "bg-primary hover:bg-green-600"
           }`}
         >
