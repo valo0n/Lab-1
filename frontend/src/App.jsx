@@ -6,6 +6,7 @@ import Wishlist from "./pages/wishlist/Wishlist";
 import Shop from "./pages/shop/Shop";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
+import OrderManagement from "./pages/admin/OrderManagement";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
+          <Route path="orders" element={<OrderManagement />} />
         </Route>
       </Routes>
     </BrowserRouter>
