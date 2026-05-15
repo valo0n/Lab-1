@@ -7,6 +7,8 @@ import Shop from "./pages/shop/Shop";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import OrderManagement from "./pages/admin/OrderManagement";
+import Customers from "./pages/admin/Customers";
+import Categories from "./pages/admin/Categories";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
@@ -28,6 +30,8 @@ function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="orders" element={<OrderManagement />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="categories" element={<Categories />} />
         </Route>
       </Routes>
     </BrowserRouter>
