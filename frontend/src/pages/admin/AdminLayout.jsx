@@ -7,10 +7,8 @@ const MAIN_MENU = [
   { label: "Dashboard", icon: "🏠", path: "/admin" },
   { label: "Order Management", icon: "🛒", path: "/admin/orders" },
   { label: "Customers", icon: "👥", path: "/admin/customers" },
-  { label: "Coupon Code", icon: "🎟️", path: "/admin/coupons" },
   { label: "Categories", icon: "📂", path: "/admin/categories" },
   { label: "Transaction", icon: "💳", path: "/admin/transactions" },
-  { label: "Brand", icon: "⭐", path: "/admin/brands" },
 ];
 
 const PRODUCT_MENU = [
@@ -68,8 +66,12 @@ export default function AdminLayout() {
                 P
               </div>
               <div>
-                <p className="font-black text-dark text-sm leading-none">PARADOX</p>
-                <p className="font-black text-primary text-[10px] leading-none">TECH</p>
+                <p className="font-black text-dark text-sm leading-none">
+                  PARADOX
+                </p>
+                <p className="font-black text-primary text-[10px] leading-none">
+                  TECH
+                </p>
               </div>
             </Link>
           ) : (
@@ -95,14 +97,18 @@ export default function AdminLayout() {
           ))}
 
           {sidebarOpen && (
-            <p className="text-xs text-muted px-4 py-2 font-black mt-4">Product</p>
+            <p className="text-xs text-muted px-4 py-2 font-black mt-4">
+              Product
+            </p>
           )}
           {PRODUCT_MENU.map((item) => (
             <MenuItem key={item.path} item={item} />
           ))}
 
           {sidebarOpen && (
-            <p className="text-xs text-muted px-4 py-2 font-black mt-4">Admin</p>
+            <p className="text-xs text-muted px-4 py-2 font-black mt-4">
+              Admin
+            </p>
           )}
           {ADMIN_MENU.map((item) => (
             <MenuItem key={item.path} item={item} />
@@ -117,7 +123,9 @@ export default function AdminLayout() {
                 {user?.name?.[0] || "A"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-black text-dark text-sm truncate">{user?.name}</p>
+                <p className="font-black text-dark text-sm truncate">
+                  {user?.name}
+                </p>
                 <p className="text-xs text-muted truncate">{user?.email}</p>
               </div>
               <button
