@@ -9,6 +9,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import OrderManagement from "./pages/admin/OrderManagement";
 import Customers from "./pages/admin/Customers";
 import Categories from "./pages/admin/Categories";
+import Transaction from "./pages/admin/Transaction";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
           <Route path="orders" element={<OrderManagement />} />
           <Route path="customers" element={<Customers />} />
           <Route path="categories" element={<Categories />} />
+          <Route path="transactions" element={<Transaction />} />
         </Route>
       </Routes>
     </BrowserRouter>
