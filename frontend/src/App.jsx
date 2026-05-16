@@ -11,6 +11,9 @@ import Customers from "./pages/admin/Customers";
 import Categories from "./pages/admin/Categories";
 import Transaction from "./pages/admin/Transaction";
 import AddProduct from "./pages/admin/AddProduct";
+import ProductMedia from "./pages/admin/ProductMedia";
+import ProductList from "./pages/admin/ProductList";
+import ProductReviews from "./pages/admin/ProductReviews";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
@@ -36,6 +39,9 @@ function App() {
           <Route path="categories" element={<Categories />} />
           <Route path="transactions" element={<Transaction />} />
           <Route path="products/add" element={<AddProduct />} />
+          <Route path="products/media" element={<ProductMedia />} />
+          <Route path="products" element={<ProductList />} />
+          <Route path="products/reviews" element={<ProductReviews />} />
         </Route>
       </Routes>
     </BrowserRouter>
