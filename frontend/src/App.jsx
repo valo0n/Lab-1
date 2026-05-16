@@ -10,6 +10,7 @@ import OrderManagement from "./pages/admin/OrderManagement";
 import Customers from "./pages/admin/Customers";
 import Categories from "./pages/admin/Categories";
 import Transaction from "./pages/admin/Transaction";
+import AddProduct from "./pages/admin/AddProduct";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
           <Route path="customers" element={<Customers />} />
           <Route path="categories" element={<Categories />} />
           <Route path="transactions" element={<Transaction />} />
+          <Route path="products/add" element={<AddProduct />} />
         </Route>
       </Routes>
     </BrowserRouter>
