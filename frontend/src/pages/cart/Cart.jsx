@@ -5,7 +5,8 @@ import Header from "../landing/Header";
 import Footer from "../landing/sections/Footer";
 
 export default function Cart() {
-  const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, clearCart, cartTotal } =
+    useCart();
 
   /* Nese shporta eshte bosh */
   if (cartItems.length === 0) {
@@ -14,7 +15,9 @@ export default function Cart() {
         <Header />
         <main className="flex-1 flex flex-col items-center justify-center py-20 px-4">
           <span className="text-7xl mb-4">🛒</span>
-          <h2 className="text-2xl font-black text-dark mb-2">Shporta jote eshte bosh</h2>
+          <h2 className="text-2xl font-black text-dark mb-2">
+            Shporta jote eshte bosh
+          </h2>
           <p className="text-muted mb-6">Shto produkte per te vazhduar</p>
           <Link
             to="/"
@@ -36,7 +39,8 @@ export default function Cart() {
         {/* Title bar */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl md:text-3xl font-black text-dark">
-            Shporta ({cartItems.length} {cartItems.length === 1 ? "produkt" : "produkte"})
+            Shporta ({cartItems.length}{" "}
+            {cartItems.length === 1 ? "produkt" : "produkte"})
           </h1>
           <button
             onClick={clearCart}
@@ -62,7 +66,9 @@ export default function Cart() {
                 {/* Info */}
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    <p className="text-xs font-black text-muted">{item.brand}</p>
+                    <p className="text-xs font-black text-muted">
+                      {item.brand}
+                    </p>
                     <h3 className="font-black text-dark">{item.name}</h3>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-lg font-black text-primary">
@@ -80,7 +86,9 @@ export default function Cart() {
                     {/* Kontrolli i sasise */}
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() =>
+                          updateQuantity(item.id, item.quantity - 1)
+                        }
                         className="w-9 h-9 border border-bg rounded-lg hover:bg-bg text-dark font-black bg-white cursor-pointer transition-colors"
                       >
                         −
@@ -89,7 +97,9 @@ export default function Cart() {
                         {item.quantity}
                       </span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() =>
+                          updateQuantity(item.id, item.quantity + 1)
+                        }
                         className="w-9 h-9 border border-bg rounded-lg hover:bg-bg text-dark font-black bg-white cursor-pointer transition-colors"
                       >
                         +
@@ -117,7 +127,9 @@ export default function Cart() {
           {/* Order summary */}
           <div className="lg:w-80">
             <div className="bg-white rounded-xl border border-bg p-6 sticky top-24">
-              <h2 className="text-lg font-black text-dark mb-4">Pasqyra e Porosise</h2>
+              <h2 className="text-lg font-black text-dark mb-4">
+                Pasqyra e Porosise
+              </h2>
 
               <div className="space-y-2 mb-4 text-sm">
                 <div className="flex justify-between text-muted">
@@ -141,9 +153,12 @@ export default function Cart() {
                 </div>
               </div>
 
-              <button className="w-full bg-primary hover:bg-green-600 text-white font-black py-3 rounded-xl transition-colors mb-3">
+              <Link
+                to="/checkout"
+                className="block w-full bg-primary hover:bg-green-600 text-white font-black py-3 rounded-xl transition-colors mb-3 text-center"
+              >
                 Vazhdo me Pagesen
-              </button>
+              </Link>
 
               <Link
                 to="/"
