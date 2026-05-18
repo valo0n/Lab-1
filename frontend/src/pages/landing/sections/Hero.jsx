@@ -1,8 +1,8 @@
-/* Hero — auto-playing banner me butona funksionale */
+/* Hero — auto-playing banner me produkte nga DB */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../../../context/CartContext";
-import { PRODUCTS } from "../../../data/products";
+import { getProducts } from "../../../lib/api";
 
 const SLIDES = [
   {
@@ -31,12 +31,30 @@ const SLIDES = [
   },
 ];
 
+/* Default emoji per kategori */
+const CATEGORY_EMOJI = {
+  Smartphones: "📱",
+  Laptops: "💻",
+  Audio: "🎧",
+  Gaming: "🎮",
+  "TV & Monitor": "📺",
+  Cameras: "📷",
+  Wearables: "⌚",
+  Accessories: "🔌",
+};
+
 export default function Hero() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const [current, setCurrent] = useState(0);
+  const [featured, setFeatured] = useState([]);
 
-  const featured = PRODUCTS.filter((p) => p.feat).slice(0, 2);
+  /* Ngarko 2 produkte te para nga DB per kart-et promo */
+  useEffect(() => {
+    getProducts({ limit: 2 })
+      .then(setFeatured)
+      .catch((err) => console.error("Hero error:", err));
+  }, []);
 
   useEffect(() => {
     const t = setInterval(
@@ -48,7 +66,6 @@ export default function Hero() {
 
   const s = SLIDES[current];
 
-  /* Trajto klikun e butonit te slide */
   const handleSlideAction = () => {
     if (s.action === "shop") {
       navigate("/shop");
@@ -57,10 +74,23 @@ export default function Hero() {
     }
   };
 
-  /* Klik te kart i produktit promo */
+  /* Pershtat strukturen e DB per cart */
   const handleProductClick = (product) => {
-    addToCart(product);
-    alert(`${product.name} u shtua ne shporte!`);
+    const price = parseFloat(product.cmimi);
+    const emoji =
+      product.categories?.ikona ||
+      CATEGORY_EMOJI[product.categories?.emertimi] ||
+      "📦";
+
+    addToCart({
+      id: product.id,
+      name: product.emertimi,
+      brand: product.marka,
+      price,
+      old: product.cmimi_zbritjes ? parseFloat(product.cmimi_zbritjes) : null,
+      emoji,
+    });
+    alert(`${product.emertimi} u shtua ne shporte!`);
   };
 
   return (
@@ -68,7 +98,7 @@ export default function Hero() {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-3 gap-4 items-stretch">
           <div
-            className={`col-span-2 rounded-2xl overflow-hidden relative bg-gradient-to-br ${s.grad} min-h-72 transition-all duration-500`}
+            className={`col-span-2 rounded-2xl overflow-hidden relative bg-linear-to-r ${s.grad} min-h-72 transition-all duration-500`}
           >
             <div className="absolute inset-0 p-10 flex flex-col justify-center">
               <span className="fade-up inline-block bg-white/20 backdrop-blur-sm text-white text-xs font-black px-3 py-1.5 rounded-full mb-4 w-fit">
@@ -83,7 +113,6 @@ export default function Hero() {
                 {s.sub}
               </p>
 
-              {/* CTA Button — tani funksional */}
               <button
                 onClick={handleSlideAction}
                 className="fade-up delay-300 bg-primary hover:bg-green-600 text-white font-black text-sm px-6 py-3 rounded-xl w-fit transition-colors border-0 cursor-pointer"
@@ -108,34 +137,49 @@ export default function Hero() {
             </span>
           </div>
 
+          {/* Kart-et e produkteve promo - nga DB */}
           <div className="flex flex-col gap-3">
-            {featured.map((p, i) => (
-              <div
-                key={p.id}
-                className={`flex-1 rounded-2xl p-4 flex flex-col justify-between transition-all hover:-translate-y-1 hover:shadow-green
-                  ${i === 0 ? "bg-bg" : "bg-light"} border border-primary/20`}
-              >
-                <div>
-                  <p className="text-xs font-black text-primary">{p.brand}</p>
-                  <p className="font-black text-sm text-dark font-lato leading-tight mt-0.5">
-                    {p.name}
-                  </p>
-                  <p className="font-black text-lg text-primary font-lato mt-1">
-                    €{p.price.toLocaleString()}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between mt-2.5">
-                  {/* Bli Tani — funksional */}
-                  <button
-                    onClick={() => handleProductClick(p)}
-                    className="bg-primary hover:bg-green-600 text-white text-xs font-black px-3 py-1.5 rounded-lg border-0 cursor-pointer transition-colors"
+            {featured.length > 0 ? (
+              featured.map((p, i) => {
+                const emoji =
+                  p.categories?.ikona ||
+                  CATEGORY_EMOJI[p.categories?.emertimi] ||
+                  "📦";
+                return (
+                  <div
+                    key={p.id}
+                    className={`flex-1 rounded-2xl p-4 flex flex-col justify-between transition-all hover:-translate-y-1 hover:shadow-green
+                      ${i === 0 ? "bg-bg" : "bg-light"} border border-primary/20`}
                   >
-                    Bli Tani
-                  </button>
-                  <span className="text-3xl select-none">{p.emoji}</span>
-                </div>
-              </div>
-            ))}
+                    <div>
+                      <p className="text-xs font-black text-primary">
+                        {p.marka || "Paradox"}
+                      </p>
+                      <p className="font-black text-sm text-dark font-lato leading-tight mt-0.5">
+                        {p.emertimi}
+                      </p>
+                      <p className="font-black text-lg text-primary font-lato mt-1">
+                        €{parseFloat(p.cmimi).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between mt-2.5">
+                      <button
+                        onClick={() => handleProductClick(p)}
+                        className="bg-primary hover:bg-green-600 text-white text-xs font-black px-3 py-1.5 rounded-lg border-0 cursor-pointer transition-colors"
+                      >
+                        Bli Tani
+                      </button>
+                      <span className="text-3xl select-none">{emoji}</span>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <>
+                <div className="flex-1 bg-bg rounded-2xl animate-pulse"></div>
+                <div className="flex-1 bg-light rounded-2xl animate-pulse"></div>
+              </>
+            )}
           </div>
         </div>
       </div>
