@@ -1,16 +1,7 @@
-/* AddProduct — formular per shtimin e produkteve te reja */
-import { useState, useRef } from "react";
+/* AddProduct — formular per shtimin e produkteve te reja - LIDHUR ME API */
+import { useState, useRef, useEffect } from "react";
+import { createProduct, getCategories } from "../../lib/api";
 
-const CATEGORIES = [
-  "Smartphones",
-  "Laptops",
-  "Audio",
-  "Gaming",
-  "TV & Monitor",
-  "Cameras",
-  "Wearables",
-  "Accessories",
-];
 const TAGS = [
   "Featured",
   "New Arrival",
@@ -28,12 +19,10 @@ const COLORS = [
 
 export default function AddProduct() {
   /* Form state */
-  const [name, setName] = useState("iPhone 15");
-  const [description, setDescription] = useState(
-    "The iPhone 15 delivers cutting-edge performance with the A16 Bionic chip, an immersive Super Retina XDR display, advanced dual-camera system, and exceptional battery life, all encased in stunning aerospace-grade aluminum.",
-  );
-  const [price, setPrice] = useState("999.89");
-  const [discount, setDiscount] = useState("99");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [price, setPrice] = useState("");
+  const [discount, setDiscount] = useState("");
   const [taxIncluded, setTaxIncluded] = useState("yes");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -47,11 +36,24 @@ export default function AddProduct() {
   const [mainImage, setMainImage] = useState(null);
   const [thumbnails, setThumbnails] = useState([]);
 
+  /* Te dhena nga DB */
+  const [dbCategories, setDbCategories] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+
   const mainFileRef = useRef(null);
   const thumbFileRef = useRef(null);
 
+  /* Ngarko kategorit nga DB ne fillim */
+  useEffect(() => {
+    getCategories()
+      .then(setDbCategories)
+      .catch((err) => console.error("Error loading categories:", err));
+  }, []);
+
   /* Llogarit cmimin e shitjes */
-  const salePrice = (parseFloat(price) - parseFloat(discount || 0)).toFixed(2);
+  const salePrice = (
+    parseFloat(price || 0) - parseFloat(discount || 0)
+  ).toFixed(2);
 
   /* Toggle color */
   const toggleColor = (hex) => {
@@ -87,13 +89,62 @@ export default function AddProduct() {
     setThumbnails((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  /* Submit */
-  const handlePublish = () => {
+  /* Reset form pas suksesit */
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+    setPrice("");
+    setDiscount("");
+    setCategory("");
+    setTag("");
+    setSelectedColors([]);
+    setMainImage(null);
+    setThumbnails([]);
+    setStockQty("Unlimited");
+    setUnlimited(true);
+  };
+
+  /* Submit - LIDH ME API */
+  const handlePublish = async () => {
+    /* Validim */
     if (!name.trim() || !price || !category) {
       alert("Plotëso Emrin, Çmimin dhe Kategorinë!");
       return;
     }
-    alert(`Produkti "${name}" u publikua me sukses!`);
+
+    setSubmitting(true);
+    try {
+      /* Gjej kategorinë në DB sipas emrit */
+      const categoryObj = dbCategories.find((c) => c.emertimi === category);
+      if (!categoryObj) {
+        alert("Kategoria nuk u gjet ne databazë");
+        setSubmitting(false);
+        return;
+      }
+
+      /* Pergatit te dhenat per backend */
+      const data = {
+        emertimi: name,
+        kategoria_id: categoryObj.id,
+        marka: tag || null,
+        pershkrimi: description || null,
+        cmimi: parseFloat(price),
+        cmimi_zbritjes: discount ? parseFloat(discount) : null,
+        sasia_stokut: unlimited ? 999 : parseInt(stockQty) || 0,
+        garancia_muaj: 12,
+        foto_kryesore: mainImage || null,
+      };
+
+      /* Therrit API */
+      await createProduct(data);
+      alert(`✅ Produkti "${name}" u publikua me sukses në databazë!`);
+      resetForm();
+    } catch (err) {
+      console.error("Publish error:", err);
+      alert(`❌ Gabim: ${err.data?.error || err.message || "Nuk u publikua"}`);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSaveDraft = () => {
@@ -116,13 +167,15 @@ export default function AddProduct() {
           </div>
           <button
             onClick={handlePublish}
-            className="bg-primary hover:bg-green-600 text-white font-black text-sm px-5 py-2.5 rounded-full border-0 cursor-pointer transition-colors"
+            disabled={submitting}
+            className="bg-primary hover:bg-green-600 text-white font-black text-sm px-5 py-2.5 rounded-full border-0 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Publish Product
+            {submitting ? "Duke ruajtur..." : "Publish Product"}
           </button>
           <button
             onClick={handleSaveDraft}
-            className="bg-white border border-bg text-dark font-black text-sm px-5 py-2.5 rounded-full cursor-pointer hover:bg-bg transition-colors flex items-center gap-2"
+            disabled={submitting}
+            className="bg-white border border-bg text-dark font-black text-sm px-5 py-2.5 rounded-full cursor-pointer hover:bg-bg transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             💾 Save to draft
           </button>
@@ -147,6 +200,7 @@ export default function AddProduct() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                placeholder="iPhone 15 Pro Max"
                 className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary"
               />
             </div>
@@ -160,6 +214,7 @@ export default function AddProduct() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={5}
+                  placeholder="Pershkrimi i produktit..."
                   className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary resize-none"
                 />
                 <div className="absolute bottom-3 right-3 flex gap-2">
@@ -185,10 +240,11 @@ export default function AddProduct() {
               <div className="relative">
                 <input
                   type="text"
-                  value={`$${price}`}
+                  value={price ? `$${price}` : ""}
                   onChange={(e) =>
                     setPrice(e.target.value.replace(/[^0-9.]/g, ""))
                   }
+                  placeholder="$0.00"
                   className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 cursor-pointer">
@@ -215,10 +271,15 @@ export default function AddProduct() {
                       onChange={(e) =>
                         setDiscount(e.target.value.replace(/[^0-9.]/g, ""))
                       }
+                      placeholder="0"
                       className="bg-transparent outline-none text-sm w-20 font-black text-dark"
                     />
                   </div>
-                  <span className="text-xs text-muted">Sale= ${salePrice}</span>
+                  {price && discount && (
+                    <span className="text-xs text-muted">
+                      Sale= ${salePrice}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -256,24 +317,18 @@ export default function AddProduct() {
                 Expiration
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    placeholder="Start"
-                    className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary"
-                  />
-                </div>
-                <div className="relative">
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    placeholder="End"
-                    className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary"
-                  />
-                </div>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+                />
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+                />
               </div>
             </div>
           </div>
@@ -295,7 +350,6 @@ export default function AddProduct() {
                   className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary disabled:opacity-50"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-black text-dark mb-2">
                   Stock Status
@@ -312,7 +366,6 @@ export default function AddProduct() {
               </div>
             </div>
 
-            {/* Unlimited toggle */}
             <div className="flex items-center gap-3 mb-4">
               <button
                 onClick={() => {
@@ -332,7 +385,6 @@ export default function AddProduct() {
               <span className="text-sm font-black text-dark">Unlimited</span>
             </div>
 
-            {/* Featured checkbox */}
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -346,26 +398,26 @@ export default function AddProduct() {
             </label>
           </div>
 
-          {/* Bottom action buttons */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               onClick={handleSaveDraft}
-              className="bg-white border border-bg text-dark font-black text-sm px-5 py-2.5 rounded-xl cursor-pointer hover:bg-bg transition-colors flex items-center gap-2"
+              disabled={submitting}
+              className="bg-white border border-bg text-dark font-black text-sm px-5 py-2.5 rounded-xl cursor-pointer hover:bg-bg transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               💾 Save to draft
             </button>
             <button
               onClick={handlePublish}
-              className="bg-primary hover:bg-green-600 text-white font-black text-sm px-5 py-2.5 rounded-xl border-0 cursor-pointer transition-colors"
+              disabled={submitting}
+              className="bg-primary hover:bg-green-600 text-white font-black text-sm px-5 py-2.5 rounded-xl border-0 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Publish Product
+              {submitting ? "Duke ruajtur..." : "Publish Product"}
             </button>
           </div>
         </div>
 
         {/* ── RIGHT: Image upload + Categories ── */}
         <div className="space-y-5">
-          {/* Upload Image */}
           <div className="bg-white rounded-2xl p-5 shadow-card">
             <h3 className="text-lg font-black text-dark mb-4">
               Upload Product Image
@@ -408,7 +460,6 @@ export default function AddProduct() {
               />
             </div>
 
-            {/* Thumbnails */}
             <div className="grid grid-cols-3 gap-2">
               {thumbnails.map((t, i) => (
                 <div
@@ -443,7 +494,7 @@ export default function AddProduct() {
             </div>
           </div>
 
-          {/* Categories card */}
+          {/* Categories - tani nga DB */}
           <div className="bg-white rounded-2xl p-5 shadow-card">
             <h3 className="text-lg font-black text-dark mb-4">Categories</h3>
 
@@ -457,12 +508,17 @@ export default function AddProduct() {
                 className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary bg-white cursor-pointer"
               >
                 <option value="">Select your product</option>
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {dbCategories.map((c) => (
+                  <option key={c.id} value={c.emertimi}>
+                    {c.emertimi}
                   </option>
                 ))}
               </select>
+              {dbCategories.length === 0 && (
+                <p className="text-xs text-muted mt-1">
+                  Duke ngarkuar kategorit...
+                </p>
+              )}
             </div>
 
             <div className="mb-4">
