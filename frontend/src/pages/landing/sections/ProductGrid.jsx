@@ -1,24 +1,77 @@
-/* ProductGrid — shfaq nje grid produktesh me filter sipas kategorise */
+/* ProductGrid — shfaq produktet me filter, ngarkuar nga DB */
+import { useState, useEffect } from "react";
 import ProductCard from "../../../components/shop/ProductCard";
-import { PRODUCTS } from "../../../data/products";
+import { getProducts } from "../../../lib/api";
 import { SectionHeader } from "./CategoriesStrip";
 
-export default function ProductGrid({ title, sub, filter = "trending", selectedCat = "" }) {
-  /* Filtro produktet sipas seksionit (trending, deal, ose feat) */
-  let products = PRODUCTS.filter((p) => p[filter]);
+export default function ProductGrid({
+  title,
+  sub,
+  categoryFilter = null,
+  limit = 8,
+}) {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  /* Filtro me tej sipas kategorise nese eshte zgjedhur */
-  if (selectedCat) {
-    products = products.filter((p) => p.cat === selectedCat);
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const params = { limit };
+        if (categoryFilter) params.category = categoryFilter;
+
+        const data = await getProducts(params);
+        setProducts(data);
+      } catch (err) {
+        console.error("Error loading products:", err);
+        setError("Nuk mund të ngarkohen produktet");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [categoryFilter, limit]);
+
+  if (loading) {
+    return (
+      <section className="bg-white px-4 py-7">
+        <div className="max-w-7xl mx-auto">
+          <SectionHeader title={title} sub={sub} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-bg rounded-xl h-72 animate-pulse"
+              ></div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   }
 
-  /* Nese nuk ka asnje produkt me kete filter, mos shfaq seksionin */
+  if (error) {
+    return (
+      <section className="bg-white px-4 py-7">
+        <div className="max-w-7xl mx-auto text-center py-10">
+          <p className="text-danger font-black">{error}</p>
+        </div>
+      </section>
+    );
+  }
+
   if (products.length === 0) return null;
 
   return (
     <section className="bg-white px-4 py-7">
       <div className="max-w-7xl mx-auto">
-        <SectionHeader title={title} sub={sub} onMore={() => alert("Shiko te gjitha")} />
+        <SectionHeader
+          title={title}
+          sub={sub}
+          onMore={() => alert("Shiko të gjitha")}
+        />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((p) => (

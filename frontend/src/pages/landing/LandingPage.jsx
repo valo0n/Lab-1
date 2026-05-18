@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "./Header";
 import Footer from "./sections/Footer";
 import Hero from "./sections/Hero";
@@ -6,8 +6,7 @@ import { Ticker, CategoriesStrip } from "./sections/CategoriesStrip";
 import ProductGrid from "./sections/ProductGrid";
 
 function LandingPage() {
-  /* Filtri i kategorise — "" = krejt, "Laptops" = vetem laptops, etj. */
-  const [selectedCat, setSelectedCat] = useState("");
+  const [selectedCat, setSelectedCat] = useState(null);
 
   return (
     <>
@@ -16,19 +15,18 @@ function LandingPage() {
       <Ticker />
       <CategoriesStrip selectedCat={selectedCat} onSelect={setSelectedCat} />
 
-      {/* Grids me produkte — filtri kalon ne secilin */}
       <ProductGrid
         title="Trending Products"
         sub="Produktet me te shitura kete jave"
-        filter="trending"
-        selectedCat={selectedCat}
+        categoryFilter={selectedCat}
+        limit={8}
       />
 
       <ProductGrid
         title="🔥 Ofertat e Limituara"
         sub="Mos i humb keto cmime"
-        filter="deal"
-        selectedCat={selectedCat}
+        categoryFilter={selectedCat}
+        limit={4}
       />
 
       <Footer />
