@@ -1,4 +1,4 @@
-/* Login page — me funksion te plote te lidhur me AuthContext */
+/* Login page — me API reale */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -7,17 +7,25 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    const result = login(email, password);
+    const result = await login(email, password);
+    setLoading(false);
 
     if (result.success) {
-      navigate("/admin");
+      /* Nese eshte admin -> dashboard admin; perndryshe -> ballina */
+      if (result.user.roles?.includes("Admin")) {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } else {
       setError(result.message);
     }
@@ -26,7 +34,6 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center px-4 py-10 font-lato">
       <div className="bg-white rounded-2xl shadow-card w-full max-w-md p-8">
-        {/* Logo lart */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-6">
           <div className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center text-white font-black text-xl">
             P
@@ -42,7 +49,6 @@ export default function Login() {
           Hyr ne llogarine tende per te vazhduar
         </p>
 
-        {/* Error message */}
         {error && (
           <div className="bg-red-50 border border-red-200 text-danger px-4 py-2 rounded-xl text-sm mb-4">
             {error}
@@ -59,8 +65,9 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              disabled={loading}
               placeholder="Enter your email"
-              className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+              className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary disabled:opacity-50"
             />
           </div>
 
@@ -73,16 +80,18 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={loading}
               placeholder="Enter your password"
-              className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+              className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary disabled:opacity-50"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-primary hover:bg-green-600 text-white font-black py-3 rounded-xl transition-colors border-0 cursor-pointer"
+            disabled={loading}
+            className="w-full bg-primary hover:bg-green-600 text-white font-black py-3 rounded-xl transition-colors border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Kyçu
+            {loading ? "Duke u kyçur..." : "Kyçu"}
           </button>
         </form>
 
