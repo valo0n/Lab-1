@@ -187,35 +187,35 @@ model product_reviews {
   @@index([produkti_id], map: "idx_reviews_produkti")
 }
 
-model products {
-  id                     Int                      @id @default(autoincrement())
-  emertimi               String                   @db.VarChar(200)
-  kategoria_id           Int
-  marka                  String?                  @db.VarChar(100)
-  modeli                 String?                  @db.VarChar(100)
-  sku                    String?                  @unique(map: "sku") @db.VarChar(50)
-  pershkrimi             String?                  @db.Text
-  cmimi                  Decimal                  @db.Decimal(18, 2)
-  cmimi_zbritjes         Decimal?                 @db.Decimal(18, 2)
-  sasia_stokut           Int                      @default(0)
-  garancia_muaj          Int                      @default(0)
-  foto_kryesore          String?                  @db.VarChar(500)
-  pesha_kg               Decimal?                 @db.Decimal(10, 2)
-  data_krijimit          DateTime                 @default(now()) @db.DateTime(0)
-  aktiv                  Boolean                  @default(true)
-  cart_items             cart_items[]
-  inventory              inventory[]
-  order_details          order_details[]
-  product_images         product_images[]
-  product_reviews        product_reviews[]
-  categories             categories               @relation(fields: [kategoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_categories")
-  purchase_order_details purchase_order_details[]
-  service_requests       service_requests[]
-  warranties             warranties[]
-  wishlists              wishlists[]
+  model products {
+    id                     Int                      @id @default(autoincrement())
+    emertimi               String                   @db.VarChar(200)
+    kategoria_id           Int
+    marka                  String?                  @db.VarChar(100)
+    modeli                 String?                  @db.VarChar(100)
+    sku                    String?                  @unique(map: "sku") @db.VarChar(50)
+    pershkrimi             String?                  @db.Text
+    cmimi                  Decimal                  @db.Decimal(18, 2)
+    cmimi_zbritjes         Decimal?                 @db.Decimal(18, 2)
+    sasia_stokut           Int                      @default(0)
+    garancia_muaj          Int                      @default(0)
+    foto_kryesore          String?                  @db.VarChar(500)
+    pesha_kg               Decimal?                 @db.Decimal(10, 2)
+    data_krijimit          DateTime                 @default(now()) @db.DateTime(0)
+    aktiv                  Boolean                  @default(true)
+    cart_items             cart_items[]
+    inventory              inventory[]
+    order_details          order_details[]
+    product_images         product_images[]
+    product_reviews        product_reviews[]
+    categories             categories               @relation(fields: [kategoria_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_categories")
+    purchase_order_details purchase_order_details[]
+    service_requests       service_requests[]
+    warranties             warranties[]
+    wishlists              wishlists[]
 
-  @@index([kategoria_id], map: "idx_products_kategoria")
-}
+    @@index([kategoria_id], map: "idx_products_kategoria")
+  }
 
 model purchase_order_details {
   id                Int             @id @default(autoincrement())
