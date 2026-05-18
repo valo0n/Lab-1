@@ -117,6 +117,34 @@ export const api = {
   delete: (endpoint, opts) =>
     apiRequest(endpoint, { method: "DELETE", ...opts }),
 };
+/* ─────────────────────────────────────────────
+   PRODUCTS API helpers
+   ───────────────────────────────────────────── */
 
+/* Merr te gjitha produktet me filter opsional */
+export const getProducts = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/products${query ? `?${query}` : ""}`, { skipAuth: true });
+};
+
+/* Merr nje produkt sipas ID */
+export const getProduct = (id) =>
+  api.get(`/products/${id}`, { skipAuth: true });
+
+/* Krijo produkt te ri (Admin only) */
+export const createProduct = (data) => api.post("/products", data);
+
+/* Edito produkt (Admin only) */
+export const updateProduct = (id, data) => api.put(`/products/${id}`, data);
+
+/* Fshi produkt (Admin only) */
+export const deleteProduct = (id) => api.delete(`/products/${id}`);
+
+/* ─────────────────────────────────────────────
+   CATEGORIES API helpers
+   ───────────────────────────────────────────── */
+
+/* Merr te gjitha kategorit */
+export const getCategories = () => api.get("/categories", { skipAuth: true });
 /* Eksporto helpers per AuthContext */
 export { getAccessToken, getRefreshToken, setTokens, clearTokens };
