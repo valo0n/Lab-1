@@ -1,11 +1,6 @@
-/* AuthContext — menaxhon login/logout per admin lokalisht */
+/* AuthContext — menaxhon login/logout me API reale */
 import { createContext, useContext, useState, useEffect } from "react";
-
-/* Kredencialet e admin-it (lokal) */
-const ADMIN_CREDENTIALS = {
-  email: "admin@admin.com",
-  password: "Loni1234",
-};
+import { api, setTokens, clearTokens, getAccessToken } from "../lib/api";
 
 const AuthContext = createContext(null);
 
@@ -13,48 +8,94 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  /* Kontrollo localStorage ne fillim per te mbajtur login pas refresh */
+  /* Ne fillim, nese ka token, merr te dhenat e userit nga API */
   useEffect(() => {
-    const savedUser = localStorage.getItem("paradox_user");
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem("paradox_user");
+    const init = async () => {
+      const token = getAccessToken();
+      if (!token) {
+        setLoading(false);
+        return;
       }
-    }
-    setLoading(false);
+
+      try {
+        const userData = await api.get("/auth/me");
+        setUser(userData);
+        localStorage.setItem("paradox_user", JSON.stringify(userData));
+      } catch (err) {
+        /* Tokeni i pavlefshem - pastro gjithqka */
+        clearTokens();
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
   }, []);
 
-  /* Login funksion — kontrollon kredencialet */
-  const login = (email, password) => {
-    if (
-      email === ADMIN_CREDENTIALS.email &&
-      password === ADMIN_CREDENTIALS.password
-    ) {
-      const adminUser = {
-        email: ADMIN_CREDENTIALS.email,
-        name: "Admin",
-        role: "Admin",
+  /* LOGIN — therret API-n reale */
+  const login = async (email, password) => {
+    try {
+      const data = await api.post(
+        "/auth/login",
+        { email, password },
+        { skipAuth: true },
+      );
+
+      /* Ruaj tokenat ne localStorage */
+      setTokens(data.accessToken, data.refreshToken);
+      localStorage.setItem("paradox_user", JSON.stringify(data.user));
+      setUser(data.user);
+
+      return { success: true, user: data.user };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.data?.error || err.message || "Gabim ne login",
       };
-      setUser(adminUser);
-      localStorage.setItem("paradox_user", JSON.stringify(adminUser));
-      return { success: true };
     }
-    return { success: false, message: "Email ose password i gabuar!" };
   };
 
-  /* Logout — fshin user-in dhe localStorage */
-  const logout = () => {
+  /* REGISTER — krijo user te ri */
+  const register = async (formData) => {
+    try {
+      const data = await api.post("/auth/register", formData, {
+        skipAuth: true,
+      });
+      return { success: true, user: data.user };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.data?.error || err.message || "Gabim ne regjistrim",
+      };
+    }
+  };
+
+  /* LOGOUT — revoko tokenin ne backend dhe pastro localStorage */
+  const logout = async () => {
+    const refreshToken = localStorage.getItem("paradox_refresh_token");
+    try {
+      if (refreshToken) {
+        await api.post("/auth/logout", { refreshToken }, { skipAuth: true });
+      }
+    } catch (err) {
+      /* Edhe nese deshton, vazhdo me logout lokal */
+      console.error("Logout API error:", err);
+    }
+    clearTokens();
     setUser(null);
-    localStorage.removeItem("paradox_user");
   };
 
-  /* Kontrollon nese eshte admin */
-  const isAdmin = user?.role === "Admin";
+  /* Helper - kontrollon nese useri ka nje rol te caktuar */
+  const hasRole = (role) => {
+    if (!user || !user.roles) return false;
+    return user.roles.includes(role);
+  };
+
+  const isAdmin = hasRole("Admin");
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin, loading }}>
+    <AuthContext.Provider
+      value={{ user, login, register, logout, isAdmin, hasRole, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );
