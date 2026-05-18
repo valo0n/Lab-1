@@ -5,8 +5,7 @@ import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 import { useSearch } from "../../context/SearchContext";
 import { useAuth } from "../../context/AuthContext";
-import { CATEGORIES } from "../../data/products";
-
+import { getCategories } from "../../lib/api";
 const NAV_LINKS = [
   { label: "Ballina", path: "/" },
   { label: "Smartphones", cat: "Smartphones" },
@@ -31,6 +30,7 @@ export default function Header() {
   const [catMenuOpen, setCatMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState("");
+  const [categories, setCategories] = useState([]);
 
   const catMenuRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -47,6 +47,13 @@ export default function Header() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  /* Ngarko kategorit nga DB */
+  useEffect(() => {
+    getCategories()
+      .then(setCategories)
+      .catch((err) => console.error("Header categories error:", err));
   }, []);
 
   const handleSearch = (e) => {
@@ -69,9 +76,9 @@ export default function Header() {
   };
 
   const handleCategoryClick = (cat) => {
-    setSelectedCategory(cat);
+    setSelectedCategory(cat.emertimi);
     setSearchQuery("");
-    navigate(`/shop?cat=${encodeURIComponent(cat)}`);
+    navigate(`/shop?cat=${encodeURIComponent(cat.emertimi)}`);
     setCatMenuOpen(false);
   };
 
@@ -112,7 +119,7 @@ export default function Header() {
       {/* ── Main navbar ── */}
       <div className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center gap-3">
-          <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+          <Link to="/" className="flex items-center gap-2 shrink-0">
             <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white font-black text-lg">
               P
             </div>
@@ -130,22 +137,28 @@ export default function Header() {
           <div className="relative hidden md:block" ref={catMenuRef}>
             <button
               onClick={() => setCatMenuOpen(!catMenuOpen)}
-              className="flex items-center gap-2 bg-primary text-white font-black text-sm px-4 py-2.5 rounded-xl flex-shrink-0 border-0 cursor-pointer hover:bg-green-600 transition-colors"
+              className="flex items-center gap-2 bg-primary text-white font-black text-sm px-4 py-2.5 rounded-xl shrink-0 border-0 cursor-pointer hover:bg-green-600 transition-colors"
             >
               ☰ Kategorite
             </button>
             {catMenuOpen && (
               <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-hover border border-bg py-2 z-50">
-                {CATEGORIES.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => handleCategoryClick(c.name)}
-                    className="w-full text-left px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors bg-transparent border-0 cursor-pointer flex items-center gap-3"
-                  >
-                    <span className="text-lg">{c.icon}</span>
-                    {c.name}
-                  </button>
-                ))}
+                {categories.length === 0 ? (
+                  <p className="px-4 py-2 text-sm text-muted">
+                    Duke ngarkuar...
+                  </p>
+                ) : (
+                  categories.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => handleCategoryClick(c)}
+                      className="w-full text-left px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors bg-transparent border-0 cursor-pointer flex items-center gap-3"
+                    >
+                      <span className="text-lg">{c.ikona || "📦"}</span>
+                      {c.emertimi}
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -161,14 +174,14 @@ export default function Header() {
             />
             <button
               type="submit"
-              className="bg-primary text-white font-black text-sm px-5 py-2.5 rounded-r-xl flex-shrink-0 border-0 cursor-pointer hover:bg-green-600 transition-colors"
+              className="bg-primary text-white font-black text-sm px-5 py-2.5 rounded-r-xl shrink-0 border-0 cursor-pointer hover:bg-green-600 transition-colors"
             >
               🔍
             </button>
           </form>
 
           {/* Action icons */}
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 shrink-0">
             <Link
               to="/wishlist"
               className="hidden sm:flex flex-col items-center p-2 text-gray-500 hover:text-primary transition-colors relative"

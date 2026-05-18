@@ -92,7 +92,7 @@ export default function Shop() {
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
-          <aside className="lg:w-64 flex-shrink-0">
+          <aside className="lg:w-64 shrink-0">
             <div className="bg-white rounded-xl border border-bg p-4 sticky top-24">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="font-black text-dark">Kategoritë</h2>
