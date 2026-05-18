@@ -1,5 +1,6 @@
-/* Ticker, CategoriesStrip, SectionHeader — all Tailwind */
-import { CATEGORIES } from "../../../data/products";
+/* Ticker, CategoriesStrip, SectionHeader — krejt nga API */
+import { useState, useEffect } from "react";
+import { getCategories } from "../../../lib/api";
 
 /* Items shown in the scrolling ticker strip */
 const TICKER_ITEMS = [
@@ -13,14 +14,23 @@ const TICKER_ITEMS = [
   "🖱️ Logitech MX Master — €89",
 ];
 
+/* Default emoji per kategori nese DB nuk ka ikone */
+const DEFAULT_EMOJI = {
+  Smartphones: "📱",
+  Laptops: "💻",
+  Audio: "🎧",
+  Gaming: "🎮",
+  "TV & Monitor": "📺",
+  Cameras: "📷",
+  Wearables: "⌚",
+  Accessories: "🔌",
+};
+
 /* ── Ticker ── */
-/* Items are doubled so the CSS animation loops seamlessly */
 export function Ticker() {
   return (
     <div className="bg-primary overflow-hidden py-2.5">
       <div className="ticker-anim">
-        {" "}
-        {/* Animation defined in index.css */}
         {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
           <span
             key={i}
@@ -35,20 +45,16 @@ export function Ticker() {
 }
 
 /* ── SectionHeader ── */
-/* Reusable header for every product section:
-   green left bar | title + subtitle | optional "See all" button */
 export function SectionHeader({ title, sub, onMore }) {
   return (
     <div className="flex items-center justify-between mb-5">
       <div className="flex items-center gap-3">
-        {/* Green left-border accent */}
-        <div className="w-1 h-7 bg-primary rounded-full flex-shrink-0" />
+        <div className="w-1 h-7 bg-primary rounded-full shrink-0" />
         <div>
           <h2 className="font-black text-xl text-dark font-lato">{title}</h2>
           {sub && <p className="text-xs text-muted mt-0.5">{sub}</p>}
         </div>
       </div>
-      {/* "See all" link — only rendered when onMore is provided */}
       {onMore && (
         <button
           onClick={onMore}
@@ -61,14 +67,48 @@ export function SectionHeader({ title, sub, onMore }) {
   );
 }
 
-/* ── CategoriesStrip ── */
-/* Grid of 10 category tiles. Clicking one sets the active filter.
-   Clicking the same one again deselects (back to "show all"). */
+/* ── CategoriesStrip — tani nga DB ── */
 export function CategoriesStrip({ selectedCat, onSelect }) {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getCategories()
+      .then((data) => {
+        setCategories(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading categories:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="bg-white px-4 py-7">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-4">
+            <h2 className="font-black text-xl text-dark font-lato">
+              Shfleto Kategoritë
+            </h2>
+            <p className="text-xs text-muted mt-0.5">
+              Gjej produktin e dëshiruar
+            </p>
+          </div>
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-2.5">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-bg rounded-xl h-20 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="bg-white px-4 py-7">
       <div className="max-w-7xl mx-auto">
-        {/* Header row */}
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="font-black text-xl text-dark font-lato">
@@ -80,38 +120,33 @@ export function CategoriesStrip({ selectedCat, onSelect }) {
           </div>
         </div>
 
-        {/* Category grid — 10 columns desktop, 5 on small screens */}
-        <div className="grid grid-cols-5 sm:grid-cols-10 gap-2.5">
-          {CATEGORIES.map((cat) => {
-            const isActive =
-              selectedCat ===
-              cat.name; /* Is this category currently selected? */
+        <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
+          {categories.map((cat) => {
+            const isActive = selectedCat === cat.id;
+            const emoji = cat.ikona || DEFAULT_EMOJI[cat.emertimi] || "📦";
+
             return (
               <button
                 key={cat.id}
-                onClick={() =>
-                  onSelect(isActive ? "" : cat.name)
-                } /* Toggle on/off */
+                onClick={() => onSelect(isActive ? null : cat.id)}
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl border-0 cursor-pointer transition-all duration-150
                   ${
                     isActive
-                      ? "bg-primary shadow-green -translate-y-0.5" /* Active: green bg */
-                      : "bg-white shadow-card hover:bg-bg hover:-translate-y-0.5 hover:shadow-hover outline outline-1 outline-bg" /* Inactive: white */
+                      ? "bg-primary shadow-green -translate-y-0.5"
+                      : "bg-white shadow-card hover:bg-bg hover:-translate-y-0.5 hover:shadow-hover outline-1 outline-bg"
                   }`}
               >
-                {/* Icon circle */}
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center text-xl
                   ${isActive ? "bg-white/25" : "bg-bg"}`}
                 >
-                  {cat.icon}
+                  {emoji}
                 </div>
-                {/* Label */}
                 <p
                   className={`text-xs font-black text-center leading-tight
                   ${isActive ? "text-white" : "text-dark"}`}
                 >
-                  {cat.name}
+                  {cat.emertimi}
                 </p>
               </button>
             );

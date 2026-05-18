@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Header from "./Header";
 import Footer from "./sections/Footer";
 import Hero from "./sections/Hero";
@@ -6,6 +6,7 @@ import { Ticker, CategoriesStrip } from "./sections/CategoriesStrip";
 import ProductGrid from "./sections/ProductGrid";
 
 function LandingPage() {
+  /* Tani ruan ID e kategorise, jo emrin */
   const [selectedCat, setSelectedCat] = useState(null);
 
   return (
