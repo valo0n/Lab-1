@@ -1,95 +1,84 @@
-/* Dashboard — admin dashboard ne ngjyra Paradox jeshile */
-import { useState } from "react";
+/* Dashboard — admin dashboard me te dhena reale nga DB */
+import { useState, useEffect } from "react";
+import { getDashboardStats } from "../../lib/api";
 
-/* Mock data */
-const TRANSACTIONS = [
-  {
-    no: 1,
-    id: "#6545",
-    date: "01 Oct | 11:29 am",
-    status: "Paid",
-    amount: "$64",
-  },
-  {
-    no: 2,
-    id: "#5412",
-    date: "01 Oct | 11:29 am",
-    status: "Pending",
-    amount: "$557",
-  },
-  {
-    no: 3,
-    id: "#6622",
-    date: "01 Oct | 11:29 am",
-    status: "Paid",
-    amount: "$156",
-  },
-  {
-    no: 4,
-    id: "#6462",
-    date: "01 Oct | 11:29 am",
-    status: "Paid",
-    amount: "$265",
-  },
-  {
-    no: 5,
-    id: "#6462",
-    date: "01 Oct | 11:29 am",
-    status: "Paid",
-    amount: "$265",
-  },
-];
-
-const TOP_PRODUCTS = [
-  { name: "Apple iPhone 13", id: "#FXZ-4567", price: "$999.00", emoji: "📱" },
-  { name: "Nike Air Jordan", id: "#FXZ-4567", price: "$72.40", emoji: "👟" },
-  { name: "T-shirt", id: "#FXZ-4567", price: "$35.40", emoji: "👕" },
-  { name: "Assorted Cross Bag", id: "#FXZ-4567", price: "$80.00", emoji: "👜" },
-];
-
-const BEST_SELLING = [
-  {
-    name: "Apple iPhone 13",
-    total: 104,
-    status: "Stock",
-    price: "$999.00",
-    emoji: "📱",
-    inStock: true,
-  },
-  {
-    name: "Nike Air Jordan",
-    total: 56,
-    status: "Stock out",
-    price: "$999.00",
-    emoji: "👟",
-    inStock: false,
-  },
-  {
-    name: "T-shirt",
-    total: 266,
-    status: "Stock",
-    price: "$999.00",
-    emoji: "👕",
-    inStock: true,
-  },
-  {
-    name: "Cross Bag",
-    total: 506,
-    status: "Stock",
-    price: "$999.00",
-    emoji: "👜",
-    inStock: true,
-  },
-];
-
-const NEW_PRODUCTS = [
-  { name: "Smart Fitness Tracker", price: "$39.99", emoji: "⌚" },
-  { name: "Leather Wallet", price: "$19.99", emoji: "👛" },
-  { name: "Electric Hair Trimmer", price: "$34.99", emoji: "💈" },
-];
+const CATEGORY_EMOJI = {
+  Smartphones: "📱",
+  Laptops: "💻",
+  Audio: "🎧",
+  Gaming: "🎮",
+  "TV & Monitor": "📺",
+  Cameras: "📷",
+  Wearables: "⌚",
+  Accessories: "🔌",
+};
 
 export default function Dashboard() {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [reportTab, setReportTab] = useState("this");
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const data = await getDashboardStats();
+        setStats(data);
+      } catch (err) {
+        console.error("Dashboard error:", err);
+        setError("Nuk mund të ngarkohen statistikat");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl p-6 shadow-card animate-pulse h-40"
+            />
+          ))}
+        </div>
+        <div className="bg-white rounded-2xl p-6 shadow-card animate-pulse h-80" />
+        <p className="text-center text-muted">Duke ngarkuar të dhënat...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+        <p className="text-danger font-black text-lg mb-2">⚠️ {error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 bg-primary text-white font-black px-5 py-2 rounded-xl border-0 cursor-pointer hover:bg-green-600"
+        >
+          Provo prap
+        </button>
+      </div>
+    );
+  }
+
+  /* Llogarit max per chart scaling */
+  const maxWeekValue = Math.max(...stats.weekData, 1);
+
+  /* Llogarit perqindjet */
+  const completedPercent =
+    stats.totalOrders > 0
+      ? Math.round((stats.completedOrders / stats.totalOrders) * 100)
+      : 0;
+  const canceledPercent =
+    stats.totalOrders > 0
+      ? Math.round((stats.canceledOrders / stats.totalOrders) * 100)
+      : 0;
 
   return (
     <div className="space-y-5">
@@ -100,19 +89,20 @@ export default function Dashboard() {
           <div className="flex items-start justify-between mb-2">
             <div>
               <p className="font-black text-dark text-base">Total Sales</p>
-              <p className="text-xs text-muted mt-1">Last 7 days</p>
+              <p className="text-xs text-muted mt-1">Te gjitha kohrat</p>
             </div>
             <button className="text-muted bg-transparent border-0 cursor-pointer text-xl">
               ⋮
             </button>
           </div>
           <div className="flex items-baseline gap-2 my-4">
-            <span className="text-3xl font-black text-dark">$350K</span>
+            <span className="text-3xl font-black text-dark">
+              ${stats.totalSales.toLocaleString()}
+            </span>
             <span className="text-sm text-muted">Sales</span>
-            <span className="text-sm text-primary font-black">↑ 10.4%</span>
           </div>
           <p className="text-xs text-muted mb-4">
-            Previous 7days <span className="font-black text-dark">($235)</span>
+            Nga {stats.completedOrders} porosi te perfunduara
           </p>
           <button className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm">
             Details
@@ -124,19 +114,20 @@ export default function Dashboard() {
           <div className="flex items-start justify-between mb-2">
             <div>
               <p className="font-black text-dark text-base">Total Orders</p>
-              <p className="text-xs text-muted mt-1">Last 7 days</p>
+              <p className="text-xs text-muted mt-1">Te gjitha porosit</p>
             </div>
             <button className="text-muted bg-transparent border-0 cursor-pointer text-xl">
               ⋮
             </button>
           </div>
           <div className="flex items-baseline gap-2 my-4">
-            <span className="text-3xl font-black text-dark">10.7K</span>
-            <span className="text-sm text-muted">order</span>
-            <span className="text-sm text-primary font-black">↑ 14.4%</span>
+            <span className="text-3xl font-black text-dark">
+              {stats.totalOrders.toLocaleString()}
+            </span>
+            <span className="text-sm text-muted">orders</span>
           </div>
           <p className="text-xs text-muted mb-4">
-            Previous 7days <span className="font-black text-dark">(7.6k)</span>
+            {stats.completedOrders} te perfunduara
           </p>
           <button className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm">
             Details
@@ -150,7 +141,7 @@ export default function Dashboard() {
               <p className="font-black text-dark text-base">
                 Pending & Canceled
               </p>
-              <p className="text-xs text-muted mt-1">Last 7 days</p>
+              <p className="text-xs text-muted mt-1">Aktuale</p>
             </div>
             <button className="text-muted bg-transparent border-0 cursor-pointer text-xl">
               ⋮
@@ -159,17 +150,15 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 gap-2 my-4">
             <div>
               <p className="text-xs text-muted mb-1">Pending</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-dark">509</span>
-                <span className="text-xs text-muted">user 204</span>
-              </div>
+              <span className="text-2xl font-black text-warning">
+                {stats.pendingOrders}
+              </span>
             </div>
             <div className="border-l border-bg pl-4">
               <p className="text-xs text-muted mb-1">Canceled</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-danger">94</span>
-                <span className="text-xs text-danger">↓ 14.4%</span>
-              </div>
+              <span className="text-2xl font-black text-danger">
+                {stats.canceledOrders}
+              </span>
             </div>
           </div>
           <button className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm">
@@ -178,435 +167,348 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── ROW 2: Report (2 cols) + Users (1 col) ── */}
+      {/* ── ROW 2: Report + Stats ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Report for this week */}
+        {/* Report */}
         <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card">
           <div className="flex items-center justify-between mb-5">
             <p className="font-black text-dark text-base">
               Report for this week
             </p>
-            <div className="flex items-center gap-2">
-              <div className="flex bg-bg rounded-full p-1 gap-1">
-                <button
-                  onClick={() => setReportTab("this")}
-                  className={`text-xs font-black px-3 py-1 rounded-full border-0 cursor-pointer transition-colors ${
-                    reportTab === "this"
-                      ? "bg-light text-dark"
-                      : "text-muted bg-transparent"
-                  }`}
-                >
-                  This week
-                </button>
-                <button
-                  onClick={() => setReportTab("last")}
-                  className={`text-xs font-black px-3 py-1 rounded-full border-0 cursor-pointer transition-colors ${
-                    reportTab === "last"
-                      ? "bg-light text-dark"
-                      : "text-muted bg-transparent"
-                  }`}
-                >
-                  Last week
-                </button>
-              </div>
-              <button className="text-muted bg-transparent border-0 cursor-pointer text-xl">
-                ⋮
+            <div className="flex bg-bg rounded-full p-1 gap-1">
+              <button
+                onClick={() => setReportTab("this")}
+                className={`text-xs font-black px-3 py-1 rounded-full border-0 cursor-pointer transition-colors ${
+                  reportTab === "this"
+                    ? "bg-light text-dark"
+                    : "text-muted bg-transparent"
+                }`}
+              >
+                This week
+              </button>
+              <button
+                onClick={() => setReportTab("last")}
+                className={`text-xs font-black px-3 py-1 rounded-full border-0 cursor-pointer transition-colors ${
+                  reportTab === "last"
+                    ? "bg-light text-dark"
+                    : "text-muted bg-transparent"
+                }`}
+              >
+                Last week
               </button>
             </div>
           </div>
 
-          {/* Tabs me numra */}
+          {/* Stat numbers - reale */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div className="border-b-2 border-primary pb-2">
-              <p className="text-xl font-black text-dark">52k</p>
+              <p className="text-xl font-black text-dark">
+                {stats.totalCustomers}
+              </p>
               <p className="text-xs text-muted">Customers</p>
             </div>
             <div className="pb-2">
-              <p className="text-xl font-black text-dark">3.5k</p>
+              <p className="text-xl font-black text-dark">
+                {stats.totalProducts}
+              </p>
               <p className="text-xs text-muted">Total Products</p>
             </div>
             <div className="pb-2">
-              <p className="text-xl font-black text-dark">2.5k</p>
+              <p className="text-xl font-black text-dark">
+                {stats.stockProducts}
+              </p>
               <p className="text-xs text-muted">Stock Products</p>
             </div>
             <div className="pb-2">
-              <p className="text-xl font-black text-dark">0.5k</p>
+              <p className="text-xl font-black text-dark">{stats.outOfStock}</p>
               <p className="text-xs text-muted">Out of Stock</p>
             </div>
             <div className="pb-2">
-              <p className="text-xl font-black text-dark">250k</p>
+              <p className="text-xl font-black text-dark">
+                ${(stats.revenue / 1000).toFixed(1)}k
+              </p>
               <p className="text-xs text-muted">Revenue</p>
             </div>
           </div>
 
-          {/* Chart */}
+          {/* Chart real */}
           <div className="relative h-56">
-            {/* Y-axis labels */}
             <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-xs text-muted">
-              <span>50k</span>
-              <span>40k</span>
-              <span>30k</span>
-              <span>20k</span>
-              <span>10k</span>
-              <span>0k</span>
+              <span>${(maxWeekValue / 1000).toFixed(0)}k</span>
+              <span>${((maxWeekValue * 0.75) / 1000).toFixed(0)}k</span>
+              <span>${((maxWeekValue * 0.5) / 1000).toFixed(0)}k</span>
+              <span>${((maxWeekValue * 0.25) / 1000).toFixed(0)}k</span>
+              <span>0</span>
             </div>
 
-            {/* SVG Chart */}
             <svg
               className="absolute left-10 right-0 top-0 bottom-6 w-[calc(100%-2.5rem)] h-[calc(100%-1.5rem)]"
               viewBox="0 0 600 200"
               preserveAspectRatio="none"
             >
-              <path
-                d="M 0 150 L 100 150 L 200 100 L 300 130 L 300 80 L 400 80 L 500 130 L 600 110 L 600 200 L 0 200 Z"
-                fill="#4ea674"
-                opacity="0.15"
-              />
-              <path
-                d="M 0 150 L 100 150 L 200 100 L 300 130 L 300 80 L 400 80 L 500 130 L 600 110"
-                stroke="#4ea674"
-                strokeWidth="3"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <line
-                x1="300"
-                y1="80"
-                x2="300"
-                y2="200"
-                stroke="#4ea674"
-                strokeWidth="1"
-                strokeDasharray="3 3"
-                opacity="0.4"
-              />
-              <circle
-                cx="300"
-                cy="80"
-                r="6"
-                fill="white"
-                stroke="#4ea674"
-                strokeWidth="3"
-              />
+              {/* Genero path nga weekData */}
+              {(() => {
+                const points = stats.weekData.map((val, i) => {
+                  const x = (i / 6) * 600;
+                  const y = 200 - (val / maxWeekValue) * 180;
+                  return `${x} ${y}`;
+                });
+
+                const linePath = "M " + points.join(" L ");
+                const areaPath = linePath + ` L 600 200 L 0 200 Z`;
+
+                return (
+                  <>
+                    <path d={areaPath} fill="#4ea674" opacity="0.15" />
+                    <path
+                      d={linePath}
+                      stroke="#4ea674"
+                      strokeWidth="3"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    {stats.weekData.map((val, i) => {
+                      const x = (i / 6) * 600;
+                      const y = 200 - (val / maxWeekValue) * 180;
+                      return val > 0 ? (
+                        <circle
+                          key={i}
+                          cx={x}
+                          cy={y}
+                          r="4"
+                          fill="white"
+                          stroke="#4ea674"
+                          strokeWidth="3"
+                        />
+                      ) : null;
+                    })}
+                  </>
+                );
+              })()}
             </svg>
 
-            {/* Tooltip */}
-            <div
-              className="absolute"
-              style={{ left: "calc(50% - 30px)", top: "20px" }}
-            >
-              <div className="bg-light text-dark text-xs font-black px-3 py-1.5 rounded-lg shadow-md text-center">
-                Thursday
-                <br />
-                14k
-              </div>
-            </div>
-
-            {/* X-axis labels */}
             <div className="absolute left-10 right-0 bottom-0 grid grid-cols-7 text-xs text-muted text-center">
-              <span>Sun</span>
-              <span>Mon</span>
-              <span>Tue</span>
-              <span className="font-black text-dark">Wed</span>
-              <span>Thu</span>
-              <span>Fri</span>
-              <span>Sat</span>
+              {stats.dayLabels.map((day) => (
+                <span key={day}>{day}</span>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Users in last 30 minutes */}
+        {/* Right side stats */}
         <div className="bg-white rounded-2xl p-6 shadow-card">
-          <div className="flex items-start justify-between mb-2">
-            <p className="font-black text-dark text-base">
-              Users in last 30 minutes
-            </p>
+          <div className="flex items-start justify-between mb-4">
+            <p className="font-black text-dark text-base">Inventory Overview</p>
             <button className="text-muted bg-transparent border-0 cursor-pointer text-xl">
               ⋮
             </button>
           </div>
-          <p className="text-3xl font-black text-dark mb-1">21.5K</p>
-          <p className="text-xs text-muted mb-3">Users per minute</p>
 
-          {/* Bars */}
-          <div className="flex items-end gap-1 h-16 mb-5">
-            {[
-              40, 60, 80, 50, 70, 90, 60, 75, 85, 70, 65, 80, 70, 90, 60, 75,
-              85, 70, 80, 90, 70, 85, 60, 75,
-            ].map((h, i) => (
-              <div
-                key={i}
-                className="flex-1 bg-primary rounded-sm"
-                style={{ height: `${h}%` }}
-              />
-            ))}
-          </div>
-
-          {/* Sales by country */}
-          <div className="border-t border-bg pt-4">
-            <div className="flex justify-between items-center mb-3">
-              <p className="font-black text-dark text-sm">Sales by Country</p>
-              <p className="text-xs text-muted">Sales</p>
+          <div className="space-y-4">
+            <div className="bg-bg rounded-xl p-4">
+              <p className="text-xs text-muted mb-1">Total Products</p>
+              <p className="text-2xl font-black text-dark">
+                {stats.totalProducts}
+              </p>
             </div>
 
-            {[
-              {
-                flag: "🇺🇸",
-                country: "US",
-                value: "30k",
-                percent: 26,
-                up: true,
-                label: "25.8%",
-              },
-              {
-                flag: "🇧🇷",
-                country: "Brazil",
-                value: "30k",
-                percent: 16,
-                up: false,
-                label: "15.8%",
-              },
-              {
-                flag: "🇦🇺",
-                country: "Australia",
-                value: "25k",
-                percent: 36,
-                up: true,
-                label: "35.8%",
-              },
-            ].map((c, i) => (
-              <div key={i} className="flex items-center gap-3 py-2">
-                <span className="text-xl">{c.flag}</span>
-                <div className="w-12">
-                  <p className="text-sm font-black text-dark">{c.value}</p>
-                  <p className="text-xs text-muted">{c.country}</p>
-                </div>
-                <div className="flex-1 h-1.5 bg-bg rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full"
-                    style={{ width: `${c.percent}%` }}
-                  />
-                </div>
-                <span
-                  className={`text-xs font-black ${c.up ? "text-primary" : "text-danger"}`}
-                >
-                  {c.up ? "↑" : "↓"} {c.label}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-bg rounded-xl p-3">
+                <p className="text-xs text-primary mb-1">In Stock</p>
+                <p className="text-xl font-black text-dark">
+                  {stats.stockProducts}
+                </p>
+              </div>
+              <div className="bg-bg rounded-xl p-3">
+                <p className="text-xs text-danger mb-1">Out of Stock</p>
+                <p className="text-xl font-black text-dark">
+                  {stats.outOfStock}
+                </p>
+              </div>
+            </div>
+
+            <div className="border-t border-bg pt-4">
+              <p className="text-xs text-muted mb-2">Stock Status</p>
+              <div className="h-2 bg-bg rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary"
+                  style={{
+                    width: `${stats.totalProducts > 0 ? (stats.stockProducts / stats.totalProducts) * 100 : 0}%`,
+                  }}
+                />
+              </div>
+              <div className="flex justify-between mt-2 text-xs">
+                <span className="text-primary font-black">
+                  {stats.totalProducts > 0
+                    ? Math.round(
+                        (stats.stockProducts / stats.totalProducts) * 100,
+                      )
+                    : 0}
+                  % available
+                </span>
+                <span className="text-danger font-black">
+                  {stats.totalProducts > 0
+                    ? Math.round((stats.outOfStock / stats.totalProducts) * 100)
+                    : 0}
+                  % sold out
                 </span>
               </div>
-            ))}
+            </div>
 
-            <button className="w-full mt-4 border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm">
+            <button className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm">
               View Insight
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── ROW 3: Transaction (2 cols) + Top Products (1 col) ── */}
+      {/* ── ROW 3: Transactions + Top Products ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Transaction */}
+        {/* Transactions */}
         <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card">
           <div className="flex items-center justify-between mb-5">
-            <p className="font-black text-dark text-base">Transaction</p>
-            <button className="bg-light text-dark text-xs font-black px-4 py-2 rounded-full border-0 cursor-pointer flex items-center gap-1.5 hover:bg-primary hover:text-white transition-colors">
-              Filter ⚙️
-            </button>
+            <p className="font-black text-dark text-base">
+              Transaksionet e Fundit
+            </p>
           </div>
 
-          <table className="w-full">
-            <thead>
-              <tr className="text-xs text-muted text-left">
-                <th className="pb-3 font-black">No</th>
-                <th className="pb-3 font-black">Id Customer</th>
-                <th className="pb-3 font-black">Order Date</th>
-                <th className="pb-3 font-black">Status</th>
-                <th className="pb-3 font-black text-right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {TRANSACTIONS.map((t) => (
-                <tr key={t.no} className="text-sm border-t border-bg">
-                  <td className="py-3.5 text-dark">{t.no}.</td>
-                  <td className="py-3.5 text-dark font-black">{t.id}</td>
-                  <td className="py-3.5 text-muted">{t.date}</td>
-                  <td className="py-3.5">
-                    <span
-                      className={`inline-flex items-center gap-1.5 ${t.status === "Paid" ? "text-primary" : "text-warning"}`}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-current"></span>
-                      {t.status}
-                    </span>
-                  </td>
-                  <td className="py-3.5 text-dark font-black text-right">
-                    {t.amount}
-                  </td>
+          {stats.recentOrders.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-5xl mb-3">📦</p>
+              <p className="text-muted font-black">Asnje porosi ende</p>
+              <p className="text-xs text-muted mt-1">Porosit do shfaqen ketu</p>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="text-xs text-muted text-left">
+                  <th className="pb-3 font-black">No</th>
+                  <th className="pb-3 font-black">Customer</th>
+                  <th className="pb-3 font-black">Date</th>
+                  <th className="pb-3 font-black">Status</th>
+                  <th className="pb-3 font-black text-right">Amount</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end mt-4">
-            <button className="border-2 border-primary text-primary text-xs font-black px-6 py-2 rounded-full hover:bg-bg cursor-pointer transition-colors">
-              Details
-            </button>
-          </div>
+              </thead>
+              <tbody>
+                {stats.recentOrders.map((order, i) => (
+                  <tr key={order.id} className="text-sm border-t border-bg">
+                    <td className="py-3.5 text-dark">{i + 1}.</td>
+                    <td className="py-3.5 text-dark font-black">#{order.id}</td>
+                    <td className="py-3.5 text-muted">
+                      {new Date(order.data_porosise).toLocaleDateString()}
+                    </td>
+                    <td className="py-3.5">
+                      <span
+                        className={`inline-flex items-center gap-1.5 ${
+                          order.statusi === "completed"
+                            ? "text-primary"
+                            : order.statusi === "pending"
+                              ? "text-warning"
+                              : "text-danger"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-current"></span>
+                        {order.statusi}
+                      </span>
+                    </td>
+                    <td className="py-3.5 text-dark font-black text-right">
+                      ${parseFloat(order.totali).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
-        {/* Top Products */}
+        {/* Recent Products */}
         <div className="bg-white rounded-2xl p-6 shadow-card">
           <div className="flex items-center justify-between mb-4">
-            <p className="font-black text-dark text-base">Top Products</p>
-            <button className="text-primary text-xs font-black bg-transparent border-0 cursor-pointer hover:underline">
-              All product
-            </button>
+            <p className="font-black text-dark text-base">Produktet e Reja</p>
           </div>
 
-          {/* Search */}
-          <div className="bg-bg rounded-full px-4 py-2 flex items-center gap-2 mb-4">
-            <span className="text-muted text-sm">🔍</span>
-            <input
-              type="text"
-              placeholder="Search"
-              className="bg-transparent outline-none text-xs flex-1 font-lato"
-            />
-          </div>
-
-          {/* List */}
           <div className="space-y-4">
-            {TOP_PRODUCTS.map((p, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-bg rounded-xl flex items-center justify-center text-2xl">
-                  {p.emoji}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-black text-dark text-sm truncate">
-                    {p.name}
-                  </p>
-                  <p className="text-xs text-muted">Item: {p.id}</p>
-                </div>
-                <span className="font-black text-dark text-sm">{p.price}</span>
-              </div>
-            ))}
+            {stats.recentProducts.length === 0 ? (
+              <p className="text-muted text-sm text-center py-5">
+                Asnje produkt
+              </p>
+            ) : (
+              stats.recentProducts.map((p) => {
+                const emoji =
+                  p.categories?.ikona ||
+                  CATEGORY_EMOJI[p.categories?.emertimi] ||
+                  "📦";
+                return (
+                  <div key={p.id} className="flex items-center gap-3">
+                    <div className="w-11 h-11 bg-bg rounded-xl flex items-center justify-center text-2xl">
+                      {emoji}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-dark text-sm truncate">
+                        {p.emertimi}
+                      </p>
+                      <p className="text-xs text-muted">
+                        {p.marka || p.categories?.emertimi}
+                      </p>
+                    </div>
+                    <span className="font-black text-dark text-sm">
+                      €{parseFloat(p.cmimi).toLocaleString()}
+                    </span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── ROW 4: Best selling (2 cols) + Add New Product (1 col) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Best selling */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card">
-          <div className="flex items-center justify-between mb-5">
-            <p className="font-black text-dark text-base">
-              Best selling product
+      {/* ── ROW 4: Top Products + Stock ── */}
+      <div className="bg-white rounded-2xl p-6 shadow-card">
+        <div className="flex items-center justify-between mb-5">
+          <p className="font-black text-dark text-base">Top Selling Products</p>
+        </div>
+
+        {stats.topProducts.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-5xl mb-3">🏆</p>
+            <p className="text-muted font-black">Asnje shitje ende</p>
+            <p className="text-xs text-muted mt-1">
+              Bestseller-at do shfaqen ketu kur te kete porosi
             </p>
-            <button className="bg-light text-dark text-xs font-black px-4 py-2 rounded-full border-0 cursor-pointer flex items-center gap-1.5 hover:bg-primary hover:text-white transition-colors">
-              Filter ⚙️
-            </button>
           </div>
-
-          {/* Header row */}
-          <div className="grid grid-cols-4 gap-3 bg-light/40 rounded-xl px-4 py-3 text-xs text-dark font-black mb-3">
-            <div>PRODUCT</div>
-            <div>TOTAL ORDER</div>
-            <div>STATUS</div>
-            <div className="text-right">PRICE</div>
-          </div>
-
-          {/* Rows */}
-          {BEST_SELLING.map((p, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-4 gap-3 px-4 py-3 border-b border-bg items-center"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 bg-bg rounded-lg flex items-center justify-center text-lg">
-                  {p.emoji}
-                </div>
-                <span className="font-black text-dark text-sm">{p.name}</span>
-              </div>
-              <div className="text-dark text-sm">{p.total}</div>
-              <div
-                className={`flex items-center gap-1.5 text-sm ${p.inStock ? "text-primary" : "text-danger"}`}
-              >
-                <span className="w-2 h-2 rounded-full bg-current"></span>
-                {p.status}
-              </div>
-              <div className="text-dark font-black text-sm text-right">
-                {p.price}
-              </div>
-            </div>
-          ))}
-
-          <div className="flex justify-end mt-4">
-            <button className="border-2 border-primary text-primary text-xs font-black px-6 py-2 rounded-full hover:bg-bg cursor-pointer transition-colors">
-              Details
-            </button>
-          </div>
-        </div>
-
-        {/* Add New Product */}
-        <div className="bg-white rounded-2xl p-6 shadow-card">
-          <div className="flex items-center justify-between mb-4">
-            <p className="font-black text-dark text-base">Add New Product</p>
-            <button className="text-primary text-xs font-black bg-transparent border-0 cursor-pointer flex items-center gap-1 hover:underline">
-              ⊕ Add New
-            </button>
-          </div>
-
-          <p className="text-xs text-muted font-black mb-3">Categories</p>
-
-          {/* Categories */}
-          <div className="space-y-2 mb-3">
-            {[
-              { name: "Electronic", emoji: "📱" },
-              { name: "Fashion", emoji: "👕" },
-              { name: "Home", emoji: "🛋️" },
-            ].map((c) => (
-              <button
-                key={c.name}
-                className="w-full flex items-center justify-between p-3 rounded-xl border border-bg hover:border-primary transition-colors bg-transparent cursor-pointer"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 bg-bg rounded-lg flex items-center justify-center text-lg">
-                    {c.emoji}
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {stats.topProducts.map((p, i) => {
+              const emoji =
+                p.categories?.ikona ||
+                CATEGORY_EMOJI[p.categories?.emertimi] ||
+                "📦";
+              return (
+                <div key={p.id} className="border border-bg rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-3xl">{emoji}</span>
+                    <span className="text-xs font-black bg-primary text-white px-2 py-1 rounded-full">
+                      #{i + 1}
+                    </span>
                   </div>
-                  <span className="font-black text-dark text-sm">{c.name}</span>
-                </div>
-                <span className="text-muted text-lg">›</span>
-              </button>
-            ))}
-          </div>
-
-          <button className="w-full text-primary text-xs font-black mb-4 bg-transparent border-0 cursor-pointer hover:underline">
-            See more
-          </button>
-
-          <p className="text-xs text-muted font-black mb-3">Product</p>
-
-          {/* Products */}
-          <div className="space-y-3">
-            {NEW_PRODUCTS.map((p, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <div className="w-10 h-10 bg-bg rounded-lg flex items-center justify-center text-xl">
-                  {p.emoji}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-black text-dark text-xs truncate">
-                    {p.name}
+                  <p className="font-black text-dark text-sm truncate">
+                    {p.emertimi}
                   </p>
-                  <p className="text-xs text-muted">{p.price}</p>
+                  <p className="text-xs text-muted mb-2">{p.marka}</p>
+                  <div className="flex justify-between items-baseline">
+                    <span className="font-black text-primary">
+                      €{parseFloat(p.cmimi).toLocaleString()}
+                    </span>
+                    <span className="text-xs text-muted">
+                      {p.total_sold} shitur
+                    </span>
+                  </div>
                 </div>
-                <button className="bg-primary hover:bg-green-600 text-white text-xs font-black px-3 py-1.5 rounded-lg border-0 cursor-pointer flex items-center gap-1 transition-colors">
-                  ⊕ Add
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
-
-          <button className="w-full text-primary text-xs font-black mt-4 bg-transparent border-0 cursor-pointer hover:underline">
-            See more
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );

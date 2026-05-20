@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
 import productsRoutes from "./routes/products.js";
 import categoriesRoutes from "./routes/categories.js";
-
+import statsRoutes from "./routes/stats.js";
 dotenv.config();
 
 const app = express();
@@ -21,6 +21,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productsRoutes);
 app.use("/api/categories", categoriesRoutes);
+app.use("/api/stats", statsRoutes);
 
 /* 404 handler */
 app.use((req, res) => {

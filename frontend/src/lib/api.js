@@ -140,11 +140,17 @@ export const updateProduct = (id, data) => api.put(`/products/${id}`, data);
 /* Fshi produkt (Admin only) */
 export const deleteProduct = (id) => api.delete(`/products/${id}`);
 
-/* ─────────────────────────────────────────────
+/* 
    CATEGORIES API helpers
-   ───────────────────────────────────────────── */
+    */
 
 /* Merr te gjitha kategorit */
 export const getCategories = () => api.get("/categories", { skipAuth: true });
 /* Eksporto helpers per AuthContext */
 export { getAccessToken, getRefreshToken, setTokens, clearTokens };
+
+
+  /* 
+   STATS API helpers
+    */
+export const getDashboardStats = () => api.get("/stats/dashboard");
