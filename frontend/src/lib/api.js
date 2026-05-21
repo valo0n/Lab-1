@@ -149,8 +149,21 @@ export const getCategories = () => api.get("/categories", { skipAuth: true });
 /* Eksporto helpers per AuthContext */
 export { getAccessToken, getRefreshToken, setTokens, clearTokens };
 
-
-  /* 
+/* 
    STATS API helpers
     */
 export const getDashboardStats = () => api.get("/stats/dashboard");
+
+/* ─────────────────────────────────────────────
+   ORDERS API helpers
+   ───────────────────────────────────────────── */
+export const createOrder = (data) => api.post("/orders", data);
+export const getOrders = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api.get(`/orders${query ? `?${query}` : ""}`);
+};
+export const getMyOrders = () => api.get("/orders/me");
+export const getOrder = (id) => api.get(`/orders/${id}`);
+export const updateOrderStatus = (id, statusi_porosis) =>
+  api.put(`/orders/${id}/status`, { statusi_porosis });
+export const deleteOrder = (id) => api.delete(`/orders/${id}`);
