@@ -1,4 +1,4 @@
-/* Customers routes - CRUD per klientet */
+/* Customers routes - CRUD per klientet me Block + Delete */
 import express from "express";
 import prisma from "../lib/prisma.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
@@ -35,7 +35,7 @@ router.get("/", authenticate, requireRole("Admin"), async (req, res) => {
       orderBy: { data_regjistrimit: "desc" },
     });
 
-    /* Llogarit total spent per cdo customer */
+    /* Llogarit total spent + status i userit */
     const enriched = customers.map((c) => {
       const totalSpent = c.orders
         .filter((o) => o.statusi_porosis === "completed")
@@ -45,6 +45,7 @@ router.get("/", authenticate, requireRole("Admin"), async (req, res) => {
         ...c,
         ordersCount: c.orders.length,
         totalSpent,
+        userActive: c.users?.aktiv ?? true,
       };
     });
 
@@ -55,9 +56,7 @@ router.get("/", authenticate, requireRole("Admin"), async (req, res) => {
   }
 });
 
-/* ─────────────────────────────────────────────
-   GET /api/customers/:id - Detajet e nje klienti
-   ───────────────────────────────────────────── */
+/* GET /api/customers/:id */
 router.get("/:id", authenticate, requireRole("Admin"), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -73,17 +72,14 @@ router.get("/:id", authenticate, requireRole("Admin"), async (req, res) => {
     });
 
     if (!customer) return res.status(404).json({ error: "Klienti nuk u gjet" });
-
     res.json(customer);
   } catch (err) {
     console.error("Get customer error:", err);
-    res.status(500).json({ error: "Gabim ne marrjen e klientit" });
+    res.status(500).json({ error: "Gabim" });
   }
 });
 
-/* ─────────────────────────────────────────────
-   PUT /api/customers/:id - Modifiko klient (Admin)
-   ───────────────────────────────────────────── */
+/* PUT /api/customers/:id - Modifiko (Admin) */
 router.put("/:id", authenticate, requireRole("Admin"), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -118,12 +114,60 @@ router.put("/:id", authenticate, requireRole("Admin"), async (req, res) => {
       return res.status(409).json({ error: "Email ekziston tashme" });
     }
     console.error("Update customer error:", err);
-    res.status(500).json({ error: "Gabim ne perditesim" });
+    res.status(500).json({ error: "Gabim" });
   }
 });
 
 /* ─────────────────────────────────────────────
-   DELETE /api/customers/:id - Fshi klient (Admin)
+   PUT /api/customers/:id/block - Bllokoj useri (Admin)
+   Vendos aktiv = false → useri nuk mund te logohet me
+   ───────────────────────────────────────────── */
+router.put(
+  "/:id/block",
+  authenticate,
+  requireRole("Admin"),
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { block } = req.body; // true = bllokoj, false = aktivizoj
+
+      const customer = await prisma.customers.findUnique({
+        where: { id },
+        include: { users: true },
+      });
+
+      if (!customer)
+        return res.status(404).json({ error: "Klienti nuk u gjet" });
+      if (!customer.user_id) {
+        return res.status(400).json({ error: "Ky klient nuk ka llogari user" });
+      }
+
+      /* Caktivizo userin + revoko refresh tokens */
+      await prisma.$transaction([
+        prisma.users.update({
+          where: { id: customer.user_id },
+          data: { aktiv: !block },
+        }),
+        /* Revoko krejt sesionet aktive */
+        prisma.refresh_tokens.updateMany({
+          where: { user_id: customer.user_id, revoked_at: null },
+          data: { revoked_at: new Date() },
+        }),
+      ]);
+
+      res.json({
+        message: block ? "Klienti u bllokua" : "Klienti u aktivizua",
+      });
+    } catch (err) {
+      console.error("Block customer error:", err);
+      res.status(500).json({ error: "Gabim ne bllokimin e klientit" });
+    }
+  },
+);
+
+/* ─────────────────────────────────────────────
+   DELETE /api/customers/:id - Fshi PERGJITHMONE (Admin)
+   Fshin customer + user + refresh_tokens + user_roles
    ───────────────────────────────────────────── */
 router.delete("/:id", authenticate, requireRole("Admin"), async (req, res) => {
   try {
@@ -135,12 +179,51 @@ router.delete("/:id", authenticate, requireRole("Admin"), async (req, res) => {
     });
     if (ordersCount > 0) {
       return res.status(400).json({
-        error: `Klienti ka ${ordersCount} porosi. Fshi porosit me pare.`,
+        error: `Klienti ka ${ordersCount} porosi. Mund ta BLLOKOSH por jo ta fshish (humbisni historikun).`,
       });
     }
 
-    await prisma.customers.delete({ where: { id } });
-    res.json({ message: "Klienti u fshi" });
+    const customer = await prisma.customers.findUnique({
+      where: { id },
+      include: { users: true },
+    });
+
+    if (!customer) return res.status(404).json({ error: "Klienti nuk u gjet" });
+
+    /* Fshi te gjitha lidhjet + customer + user */
+    await prisma.$transaction(async (tx) => {
+      /* Fshi cart items, wishlists, reviews, service_requests, warranties */
+      await tx.cart_items.deleteMany({ where: { klienti_id: id } });
+      await tx.wishlists.deleteMany({ where: { klienti_id: id } });
+      await tx.product_reviews.deleteMany({ where: { klienti_id: id } });
+      await tx.service_requests.deleteMany({ where: { klienti_id: id } });
+      await tx.warranties.deleteMany({ where: { klienti_id: id } });
+
+      /* Fshi customer */
+      await tx.customers.delete({ where: { id } });
+
+      /* Fshi userin nese ekziston */
+      if (customer.user_id) {
+        await tx.refresh_tokens.deleteMany({
+          where: { user_id: customer.user_id },
+        });
+        await tx.user_roles.deleteMany({
+          where: { user_id: customer.user_id },
+        });
+        await tx.user_claims.deleteMany({
+          where: { user_id: customer.user_id },
+        });
+        await tx.user_tokens.deleteMany({
+          where: { user_id: customer.user_id },
+        });
+        await tx.notifications.deleteMany({
+          where: { user_id: customer.user_id },
+        });
+        await tx.users.delete({ where: { id: customer.user_id } });
+      }
+    });
+
+    res.json({ message: "Klienti dhe llogaria u fshin pergjithmone" });
   } catch (err) {
     console.error("Delete customer error:", err);
     res.status(500).json({ error: "Gabim ne fshirje" });
