@@ -1,4 +1,4 @@
-/* Customers admin — listim, edit, fshi klientet nga DB */
+/* Customers admin — Block + Delete me 2 butona */
 import { useState, useEffect } from "react";
 import { api } from "../../lib/api";
 
@@ -11,7 +11,6 @@ export default function Customers() {
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({});
 
-  /* Ngarko klientet */
   const fetchCustomers = async () => {
     try {
       setLoading(true);
@@ -34,14 +33,12 @@ export default function Customers() {
     // eslint-disable-next-line
   }, []);
 
-  /* Search me debounce */
   useEffect(() => {
     const timer = setTimeout(() => fetchCustomers(), 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line
   }, [searchQuery]);
 
-  /* Hap detajet */
   const handleViewDetails = async (customer) => {
     try {
       const fullData = await api.get(`/customers/${customer.id}`);
@@ -62,15 +59,12 @@ export default function Customers() {
     }
   };
 
-  /* Ruaj ndryshimet */
   const handleSave = async () => {
     try {
       await api.put(`/customers/${selectedCustomer.id}`, editForm);
       alert("✅ Klienti u përditësua me sukses!");
       setEditMode(false);
-      /* Rifresko listën */
       fetchCustomers();
-      /* Rifresko detajet */
       const updated = await api.get(`/customers/${selectedCustomer.id}`);
       setSelectedCustomer(updated);
     } catch (err) {
@@ -78,13 +72,43 @@ export default function Customers() {
     }
   };
 
-  /* Fshi klient */
-  const handleDelete = async (id) => {
-    if (!confirm("A je i sigurt që do të fshish këtë klient?")) return;
+  /* BLLOKOJ - caktivizo userin (mund te aktivizohet prap) */
+  const handleBlock = async (id, isCurrentlyActive, name) => {
+    const action = isCurrentlyActive ? "BLLOKOSH" : "AKTIVIZOSH";
+    if (
+      !confirm(
+        `A je i sigurt që do të ${action} klientin "${name}"?\n\n${isCurrentlyActive ? "Useri NUK do mund të logohet por të dhënat ruhen." : "Useri do mund të logohet prap."}`,
+      )
+    )
+      return;
+
+    try {
+      await api.put(`/customers/${id}/block`, { block: isCurrentlyActive });
+      alert(`✅ Klienti ${isCurrentlyActive ? "u bllokua" : "u aktivizua"}!`);
+      fetchCustomers();
+    } catch (err) {
+      alert(`Gabim: ${err.data?.error || err.message}`);
+    }
+  };
+
+  /* FSHI PERGJITHMONE - me 2 konfirmime */
+  const handleDelete = async (id, name) => {
+    if (
+      !confirm(
+        `⚠️ KUJDES!\n\nDo të fshish PËRGJITHMONË klientin "${name}".\n\nKjo do të fshijë:\n- Llogarinë e user-it\n- Wishlist\n- Cart\n- Reviews\n- Service requests\n- Warranties\n\nA je i sigurt?`,
+      )
+    )
+      return;
+    if (
+      !confirm(
+        `🚨 KONFIRMIM I FUNDIT\n\nKy veprim NUK MUND TË KTHEHET MBRAPSHT!\n\nKlikoni OK për të fshirë "${name}" përgjithmonë.`,
+      )
+    )
+      return;
 
     try {
       await api.delete(`/customers/${id}`);
-      alert("✅ Klienti u fshi");
+      alert("✅ Klienti u fshi përgjithmonë");
       setCustomers((prev) => prev.filter((c) => c.id !== id));
       setSelectedCustomer(null);
     } catch (err) {
@@ -143,7 +167,7 @@ export default function Customers() {
                   <th className="px-4 py-3 font-black">Qyteti</th>
                   <th className="px-4 py-3 font-black">Porosi</th>
                   <th className="px-4 py-3 font-black">Total Spent</th>
-                  <th className="px-4 py-3 font-black">Regjistrimi</th>
+                  <th className="px-4 py-3 font-black">Status</th>
                   <th className="px-4 py-3 font-black text-center">Veprime</th>
                 </tr>
               </thead>
@@ -158,7 +182,9 @@ export default function Customers() {
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-black text-xs">
+                        <div
+                          className={`w-8 h-8 ${c.userActive ? "bg-primary" : "bg-gray-400"} text-white rounded-full flex items-center justify-center font-black text-xs`}
+                        >
                           {c.emri?.[0]?.toUpperCase()}
                           {c.mbiemri?.[0]?.toUpperCase()}
                         </div>
@@ -182,13 +208,19 @@ export default function Customers() {
                     <td className="px-4 py-3 text-sm font-black text-primary">
                       €{c.totalSpent.toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted">
-                      {new Date(c.data_regjistrimit).toLocaleDateString(
-                        "sq-AL",
+                    <td className="px-4 py-3">
+                      {c.userActive ? (
+                        <span className="text-xs font-black bg-primary/10 text-primary px-2 py-1 rounded-full">
+                          ✓ Aktiv
+                        </span>
+                      ) : (
+                        <span className="text-xs font-black bg-red-100 text-danger px-2 py-1 rounded-full">
+                          🚫 Bllokuar
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 justify-center">
+                      <div className="flex items-center gap-1 justify-center">
                         <button
                           onClick={() => handleViewDetails(c)}
                           className="text-primary hover:bg-bg p-2 rounded-lg cursor-pointer bg-transparent border-0 transition-colors"
@@ -197,9 +229,28 @@ export default function Customers() {
                           👁️
                         </button>
                         <button
-                          onClick={() => handleDelete(c.id)}
+                          onClick={() =>
+                            handleBlock(
+                              c.id,
+                              c.userActive,
+                              `${c.emri} ${c.mbiemri}`,
+                            )
+                          }
+                          className={`p-2 rounded-lg cursor-pointer bg-transparent border-0 transition-colors ${
+                            c.userActive
+                              ? "text-warning hover:bg-yellow-50"
+                              : "text-primary hover:bg-bg"
+                          }`}
+                          title={c.userActive ? "Bllokoj" : "Aktivizoj"}
+                        >
+                          {c.userActive ? "🚫" : "✓"}
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleDelete(c.id, `${c.emri} ${c.mbiemri}`)
+                          }
                           className="text-danger hover:bg-red-50 p-2 rounded-lg cursor-pointer bg-transparent border-0 transition-colors"
-                          title="Fshi"
+                          title="Fshi përgjithmonë"
                         >
                           🗑️
                         </button>
@@ -211,6 +262,27 @@ export default function Customers() {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Info card */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 text-sm">
+        <p className="font-black text-dark mb-1">
+          💡 Si funksionojnë veprimet:
+        </p>
+        <ul className="text-muted space-y-1 ml-4">
+          <li>
+            <span className="font-black">👁️ Detajet</span> — hap modal me të
+            dhëna komplete
+          </li>
+          <li>
+            <span className="font-black">🚫 Bllokoj</span> — userin nuk hyn dot,
+            por mbet në DB (rekomandohet)
+          </li>
+          <li>
+            <span className="font-black">🗑️ Fshi</span> — fshin përgjithmonë
+            (vetëm nëse s'ka porosi)
+          </li>
+        </ul>
       </div>
 
       {/* Modal me detajet */}
@@ -260,7 +332,6 @@ export default function Customers() {
               </div>
             </div>
 
-            {/* Info */}
             <div className="grid grid-cols-2 gap-3 mb-5">
               {[
                 { label: "Emri", key: "emri" },
@@ -295,7 +366,6 @@ export default function Customers() {
               ))}
             </div>
 
-            {/* Porosit */}
             <h4 className="font-black text-dark mb-3">
               Porosit ({selectedCustomer.orders?.length || 0})
             </h4>
