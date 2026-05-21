@@ -5,14 +5,13 @@ import { authenticate, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
-/* GET /api/stats/dashboard - Statistikat e dashboard-it admin */
 router.get(
   "/dashboard",
   authenticate,
   requireRole("Admin"),
   async (req, res) => {
     try {
-      /* Numerimet baze nga tabelat */
+      /* Produktet */
       const totalProducts = await prisma.products.count({
         where: { aktiv: true },
       });
@@ -25,33 +24,33 @@ router.get(
       const totalCustomers = await prisma.customers.count();
       const totalUsers = await prisma.users.count();
 
-      /* Porosit  - nese tabela eshte bosh, do dale 0 */
+      /* Porositë */
       const totalOrders = await prisma.orders.count();
       const completedOrders = await prisma.orders.count({
-        where: { statusi: "completed" },
+        where: { statusi_porosis: "completed" },
       });
       const pendingOrders = await prisma.orders.count({
-        where: { statusi: "pending" },
+        where: { statusi_porosis: "pending" },
       });
       const canceledOrders = await prisma.orders.count({
-        where: { statusi: "canceled" },
+        where: { statusi_porosis: "canceled" },
       });
 
-      /* Total revenue nga porosit e perfunduara */
+      /* Revenue */
       const revenueResult = await prisma.orders.aggregate({
-        where: { statusi: "completed" },
-        _sum: { totali: true },
+        where: { statusi_porosis: "completed" },
+        _sum: { shuma_totale: true },
       });
-      const totalRevenue = revenueResult._sum.totali || 0;
+      const totalRevenue = revenueResult._sum.shuma_totale || 0;
 
       /* Porosit e fundit (5) */
       const recentOrders = await prisma.orders.findMany({
         take: 5,
-        orderBy: { data_porosise: "desc" },
+        orderBy: { data_porosis: "desc" },
         include: { customers: true },
       });
 
-      /* Top 4 produkte me te shitura - nga order_details */
+      /* Top 4 produkte me te shitura */
       const topProductsRaw = await prisma.order_details.groupBy({
         by: ["produkti_id"],
         _sum: { sasia: true },
@@ -73,25 +72,24 @@ router.get(
         };
       });
 
-      /* Te dhena per chart javore - porosit e fundit 7 ditesh */
+      /* Te dhena per chart javore */
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
       const weeklyOrders = await prisma.orders.findMany({
-        where: { data_porosise: { gte: sevenDaysAgo } },
-        select: { data_porosise: true, totali: true },
+        where: { data_porosis: { gte: sevenDaysAgo } },
+        select: { data_porosis: true, shuma_totale: true },
       });
 
-      /* Grupo sipas dites */
       const weekData = Array(7).fill(0);
       const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
       weeklyOrders.forEach((order) => {
-        const dayIndex = new Date(order.data_porosise).getDay();
-        weekData[dayIndex] += parseFloat(order.totali);
+        const dayIndex = new Date(order.data_porosis).getDay();
+        weekData[dayIndex] += parseFloat(order.shuma_totale);
       });
 
-      /* Produkte me stok te ulet (best selling alternative kur s'ka porosi) */
+      /* Produkte te reja */
       const recentProducts = await prisma.products.findMany({
         take: 4,
         where: { aktiv: true },
@@ -100,26 +98,19 @@ router.get(
       });
 
       res.json({
-        /* Stat cards */
         totalSales: parseFloat(totalRevenue),
         totalOrders,
         pendingOrders,
         canceledOrders,
         completedOrders,
-
-        /* Detaje */
         totalCustomers,
         totalUsers,
         totalProducts,
         stockProducts,
         outOfStock,
         revenue: parseFloat(totalRevenue),
-
-        /* Chart javore */
         weekData,
         dayLabels,
-
-        /* Lista */
         recentOrders,
         topProducts,
         recentProducts,
