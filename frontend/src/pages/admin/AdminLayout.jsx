@@ -9,6 +9,8 @@ const MAIN_MENU = [
   { label: "Customers", icon: "👥", path: "/admin/customers" },
   { label: "Categories", icon: "📂", path: "/admin/categories" },
   { label: "Transaction", icon: "💳", path: "/admin/transactions" },
+  { icon: "🏢", label: "Suppliers", path: "/admin/suppliers" },
+  { icon: "🛡️", label: "Warranties", path: "/admin/warranties" },
 ];
 
 const PRODUCT_MENU = [

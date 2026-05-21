@@ -250,6 +250,22 @@ export default function Header() {
                       )}
 
                       <Link
+                        to="/profile"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
+                      >
+                        👤 Profili Im
+                      </Link>
+
+                      <Link
+                        to="/my-orders"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
+                      >
+                        📦 Porositë e Mia
+                      </Link>
+
+                      <Link
                         to="/wishlist"
                         onClick={() => setUserMenuOpen(false)}
                         className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
