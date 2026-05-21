@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
+import { createOrder } from "../../lib/api";
 import Header from "../landing/Header";
 import Footer from "../landing/sections/Footer";
 
@@ -33,6 +34,9 @@ export default function Checkout() {
 
   const tax = cartTotal * 0.08;
   const total = cartTotal + tax;
+
+  const [submitting, setSubmitting] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   /* Nese shporta eshte bosh */
   if (cartItems.length === 0 && step !== 3) {
@@ -78,10 +82,20 @@ export default function Checkout() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  /* Validimi i hapit 2 - pagesa */
-  const handlePayment = (e) => {
-    e.preventDefault();
+  {
+    apiError && (
+      <div className="bg-red-50 border border-red-200 text-danger px-4 py-2 rounded-xl text-sm mb-4">
+        {apiError}
+      </div>
+    );
+  }
 
+  /* Validimi i hapit 2 - pagesa */
+  const handlePayment = async (e) => {
+    e.preventDefault();
+    setApiError("");
+
+    /* Validim karte */
     if (paymentMethod === "card") {
       if (!cardNumber || !cardHolder || !expiry || !cvv) {
         alert("Plotëso të dhënat e kartës!");
@@ -97,12 +111,35 @@ export default function Checkout() {
       }
     }
 
-    /* Gjenero order ID random */
-    const newOrderId = "#ORD" + Math.floor(Math.random() * 900000 + 100000);
-    setOrderId(newOrderId);
-    setStep(3);
-    clearCart();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setSubmitting(true);
+    try {
+      /* Pergatit te dhenat per backend */
+      const items = cartItems.map((item) => ({
+        produkti_id: item.id,
+        sasia: item.quantity,
+        cmimi: item.price,
+      }));
+
+      const result = await createOrder({
+        items,
+        adresa_dorezimit: `${address}, ${city}, ${zip}`,
+        telefoni: phone,
+        metoda_pageses: paymentMethod,
+      });
+
+      /* Set order ID dhe shko te hapi 3 */
+      setOrderId(result.order.orderId);
+      setStep(3);
+      clearCart();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      console.error("Order error:", err);
+      setApiError(
+        err.data?.error || "Gabim ne krijimin e porosise. Provo prap.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   /* Format card number ne grupe 4-she */
@@ -362,6 +399,11 @@ export default function Checkout() {
                   💳 Menyra e Pageses
                 </h2>
 
+                {apiError && (
+                  <div className="bg-red-50 border border-red-200 text-danger px-4 py-2 rounded-xl text-sm mb-4">
+                    {apiError}
+                  </div>
+                )}
                 {/* Payment method tabs */}
                 <div className="grid grid-cols-3 gap-2 mb-6">
                   {[
@@ -516,15 +558,19 @@ export default function Checkout() {
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="flex-1 border-2 border-bg text-dark font-black py-3 rounded-xl cursor-pointer hover:bg-bg transition-colors"
+                    disabled={submitting}
+                    className="flex-1 border-2 border-bg text-dark font-black py-3 rounded-xl cursor-pointer hover:bg-bg transition-colors disabled:opacity-50"
                   >
                     ← Kthehu
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 bg-primary hover:bg-green-600 text-white font-black py-3 rounded-xl transition-colors border-0 cursor-pointer"
+                    disabled={submitting}
+                    className="flex-1 bg-primary hover:bg-green-600 text-white font-black py-3 rounded-xl transition-colors border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Konfirmo Porosine →
+                    {submitting
+                      ? "Duke krijuar porosine..."
+                      : "Konfirmo Porosine →"}
                   </button>
                 </div>
 
