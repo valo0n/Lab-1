@@ -1,196 +1,196 @@
-/* AdminLayout — layout-i komplet me sidebar dhe topbar */
+/* AdminLayout — Sidebar + Topbar + Outlet per faqet admin */
 import { useState } from "react";
-import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
+import { Link, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-const MAIN_MENU = [
-  { label: "Dashboard", icon: "🏠", path: "/admin" },
-  { label: "Order Management", icon: "🛒", path: "/admin/orders" },
-  { label: "Customers", icon: "👥", path: "/admin/customers" },
-  { label: "Categories", icon: "📂", path: "/admin/categories" },
-  { label: "Transaction", icon: "💳", path: "/admin/transactions" },
-  { icon: "🏢", label: "Suppliers", path: "/admin/suppliers" },
-  { icon: "🛡️", label: "Warranties", path: "/admin/warranties" },
-];
-
-const PRODUCT_MENU = [
-  { label: "Add Products", icon: "➕", path: "/admin/products/add" },
-  { label: "Product Media", icon: "🖼️", path: "/admin/products/media" },
-  { label: "Product List", icon: "📋", path: "/admin/products" },
-  { label: "Product Reviews", icon: "💬", path: "/admin/products/reviews" },
-];
-
-const ADMIN_MENU = [
-  { label: "Admin role", icon: "👤", path: "/admin/roles" },
-  { label: "Control Authority", icon: "⚙️", path: "/admin/control" },
+const MENU_ITEMS = [
+  {
+    section: "Main menu",
+    items: [
+      { icon: "🏠", label: "Dashboard", path: "/admin", exact: true },
+      { icon: "🛒", label: "Order Management", path: "/admin/orders" },
+      { icon: "👥", label: "Customers", path: "/admin/customers" },
+      { icon: "📂", label: "Categories", path: "/admin/categories" },
+      { icon: "💳", label: "Transaction", path: "/admin/transactions" },
+      { icon: "🏢", label: "Suppliers", path: "/admin/suppliers" },
+      { icon: "🛡️", label: "Warranties", path: "/admin/warranties" },
+      {
+        icon: "🔧",
+        label: "Service Requests",
+        path: "/admin/service-requests",
+      },
+    ],
+  },
+  {
+    section: "Product",
+    items: [
+      {
+        icon: "➕",
+        label: "Add Products",
+        path: "/admin/products/add",
+        exact: true,
+      },
+      {
+        icon: "🖼️",
+        label: "Product Media",
+        path: "/admin/products/media",
+        exact: true,
+      },
+      {
+        icon: "📋",
+        label: "Product List",
+        path: "/admin/products",
+        exact: true,
+      },
+      {
+        icon: "💬",
+        label: "Product Reviews",
+        path: "/admin/products/reviews",
+        exact: true,
+      },
+    ],
+  },
 ];
 
 export default function AdminLayout() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const location = useLocation();
+  const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
-  /* Komponent ndihmes per nje item te menuse */
-  const MenuItem = ({ item }) => {
-    const isActive = location.pathname === item.path;
-    return (
-      <Link
-        to={item.path}
-        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-black transition-colors ${
-          isActive ? "bg-primary text-white" : "text-dark hover:bg-bg"
-        }`}
-      >
-        <span className="text-lg">{item.icon}</span>
-        {sidebarOpen && <span>{item.label}</span>}
-      </Link>
-    );
+  /* Kontrollo nese path-i aktual perputhet me menu item */
+  const isActive = (item) => {
+    /* Nese item ka 'exact: true', perputhje ekzakte */
+    if (item.exact) {
+      return location.pathname === item.path;
+    }
+    return location.pathname.startsWith(item.path);
   };
 
   return (
-    <div className="min-h-screen bg-bg flex font-lato">
-      {/* ── SIDEBAR ── */}
+    <div className="min-h-screen flex bg-bg font-lato">
+      {/* SIDEBAR */}
       <aside
-        className={`bg-white border-r border-bg flex flex-col transition-all ${
-          sidebarOpen ? "w-64" : "w-20"
-        }`}
+        className={`bg-white border-r border-bg flex flex-col transition-all duration-300 ${sidebarOpen ? "w-64" : "w-20"}`}
       >
-        {/* Logo + toggle */}
-        <div className="p-4 flex items-center justify-between border-b border-bg">
-          {sidebarOpen ? (
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white font-black">
-                P
-              </div>
+        <div className="p-4 border-b border-bg flex items-center justify-between">
+          <Link to="/admin" className="flex items-center gap-2 no-underline">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white font-black text-lg flex-shrink-0">
+              P
+            </div>
+            {sidebarOpen && (
               <div>
-                <p className="font-black text-dark text-sm leading-none">
+                <p className="font-black text-dark text-base leading-none">
                   PARADOX
                 </p>
-                <p className="font-black text-primary text-[10px] leading-none">
+                <p className="font-black text-primary text-xs leading-none">
                   TECH
                 </p>
               </div>
-            </Link>
-          ) : (
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white font-black mx-auto">
-              P
-            </div>
-          )}
+            )}
+          </Link>
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-muted hover:text-primary bg-transparent border-0 cursor-pointer text-xl"
+            className="text-muted hover:text-primary bg-transparent border-0 cursor-pointer text-lg"
           >
             {sidebarOpen ? "◀" : "▶"}
           </button>
         </div>
 
-        {/* Menu */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {sidebarOpen && (
-            <p className="text-xs text-muted px-4 py-2 font-black">Main menu</p>
-          )}
-          {MAIN_MENU.map((item) => (
-            <MenuItem key={item.path} item={item} />
-          ))}
-
-          {sidebarOpen && (
-            <p className="text-xs text-muted px-4 py-2 font-black mt-4">
-              Product
-            </p>
-          )}
-          {PRODUCT_MENU.map((item) => (
-            <MenuItem key={item.path} item={item} />
-          ))}
-
-          {sidebarOpen && (
-            <p className="text-xs text-muted px-4 py-2 font-black mt-4">
-              Admin
-            </p>
-          )}
-          {ADMIN_MENU.map((item) => (
-            <MenuItem key={item.path} item={item} />
+        <nav className="flex-1 overflow-y-auto py-4">
+          {MENU_ITEMS.map((section) => (
+            <div key={section.section} className="mb-4">
+              {sidebarOpen && (
+                <p className="px-4 mb-2 text-xs font-black text-muted uppercase tracking-wide">
+                  {section.section}
+                </p>
+              )}
+              <div className="space-y-0.5 px-2">
+                {section.items.map((item) => {
+                  const active = isActive(item);
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-black transition-colors no-underline ${
+                        active
+                          ? "bg-primary text-white"
+                          : "text-dark hover:bg-bg"
+                      }`}
+                      title={!sidebarOpen ? item.label : ""}
+                    >
+                      <span className="text-lg flex-shrink-0">{item.icon}</span>
+                      {sidebarOpen && <span>{item.label}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </nav>
 
-        {/* User info + logout */}
         <div className="p-3 border-t border-bg">
           {sidebarOpen ? (
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black">
-                {user?.name?.[0] || "A"}
+            <div className="bg-bg rounded-xl p-3 flex items-center gap-2">
+              <div className="w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0">
+                {user?.emri_plote?.[0]?.toUpperCase() || "A"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-black text-dark text-sm truncate">
-                  {user?.name}
+                <p className="font-black text-dark text-xs truncate">
+                  {user?.emri_plote || user?.user_name}
                 </p>
                 <p className="text-xs text-muted truncate">{user?.email}</p>
               </div>
               <button
-                onClick={handleLogout}
+                onClick={logout}
+                className="text-danger hover:bg-red-50 p-1.5 rounded-lg cursor-pointer bg-transparent border-0"
                 title="Dil"
-                className="text-muted hover:text-danger bg-transparent border-0 cursor-pointer text-lg"
               >
                 🚪
               </button>
             </div>
           ) : (
             <button
-              onClick={handleLogout}
+              onClick={logout}
+              className="w-full text-danger hover:bg-red-50 p-2 rounded-lg cursor-pointer bg-transparent border-0"
               title="Dil"
-              className="w-full flex justify-center p-2 text-muted hover:text-danger bg-transparent border-0 cursor-pointer text-xl"
             >
               🚪
             </button>
           )}
-
           {sidebarOpen && (
             <Link
               to="/"
-              className="flex items-center gap-2 px-3 py-2 text-sm font-black text-primary hover:bg-bg rounded-xl"
+              className="block mt-2 text-center text-xs text-primary hover:underline no-underline font-black"
             >
-              🛍️ Shko te dyqani
+              🔙 Shko te dyqani
             </Link>
           )}
         </div>
       </aside>
 
-      {/* ── MAIN AREA ── */}
-      <div className="flex-1 flex flex-col">
-        {/* Topbar */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white border-b border-bg px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-black text-dark">Dashboard</h1>
-
           <div className="flex items-center gap-4">
-            {/* Search */}
-            <div className="hidden md:flex bg-bg rounded-xl px-4 py-2 items-center gap-2 w-80">
-              <span className="text-muted">🔍</span>
+            <div className="bg-bg rounded-full px-4 py-2 flex items-center gap-2 w-80">
+              <span className="text-muted text-sm">🔍</span>
               <input
                 type="text"
                 placeholder="Search data, users, or reports"
                 className="bg-transparent outline-none text-sm flex-1 font-lato"
               />
             </div>
-
-            {/* Notifications */}
-            <button className="relative w-10 h-10 rounded-full bg-bg flex items-center justify-center hover:bg-light border-0 cursor-pointer transition-colors">
-              <span className="text-lg">🔔</span>
+            <button className="relative w-10 h-10 bg-bg rounded-full flex items-center justify-center cursor-pointer hover:bg-bg/70 border-0 text-lg">
+              🔔
               <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
             </button>
-
-            {/* Avatar */}
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-black">
-              {user?.name?.[0] || "A"}
+            <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-black">
+              {user?.emri_plote?.[0]?.toUpperCase() || "A"}
             </div>
           </div>
         </header>
 
-        {/* Content area — ketu shfaqen faqet brenda admin-it */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-6 bg-bg">
           <Outlet />
         </main>
       </div>
