@@ -118,7 +118,7 @@ export default function AdminLayout() {
                       }`}
                       title={!sidebarOpen ? item.label : ""}
                     >
-                      <span className="text-lg flex-shrink-0">{item.icon}</span>
+                      <span className="text-lg shrink-0">{item.icon}</span>
                       {sidebarOpen && <span>{item.label}</span>}
                     </Link>
                   );
@@ -131,7 +131,7 @@ export default function AdminLayout() {
         <div className="p-3 border-t border-bg">
           {sidebarOpen ? (
             <div className="bg-bg rounded-xl p-3 flex items-center gap-2">
-              <div className="w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0">
+              <div className="w-9 h-9 bg-primary text-white rounded-full flex items-center justify-center font-black text-sm shrink-0">
                 {user?.emri_plote?.[0]?.toUpperCase() || "A"}
               </div>
               <div className="flex-1 min-w-0">
