@@ -1,4 +1,4 @@
-/* Header — top navbar plotesisht funksional */
+/* Header — top navbar me Shop button */
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
@@ -6,17 +6,19 @@ import { useWishlist } from "../../context/WishlistContext";
 import { useSearch } from "../../context/SearchContext";
 import { useAuth } from "../../context/AuthContext";
 import { getCategories } from "../../lib/api";
+
 const NAV_LINKS = [
   { label: "Ballina", path: "/" },
+  { label: "Shop", path: "/shop" }, // ← I RI
   { label: "Smartphones", cat: "Smartphones" },
   { label: "Laptops", cat: "Laptops" },
   { label: "TV & Monitor", cat: "TV & Monitor" },
   { label: "Audio", cat: "Audio" },
   { label: "Gaming", cat: "Gaming" },
-  { label: "Tablets", cat: "Tablets" },
+  { label: "Tablets", cat: "Smartphones" },
   { label: "Wearables", cat: "Wearables" },
   { label: "Cameras", cat: "Cameras" },
-  { label: "Smart Home", cat: "Smart Home" },
+  { label: "Smart Home", cat: "Accessories" },
 ];
 
 export default function Header() {
@@ -35,7 +37,6 @@ export default function Header() {
   const catMenuRef = useRef(null);
   const userMenuRef = useRef(null);
 
-  /* Mbyll dropdown-et kur klikon jashte */
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (catMenuRef.current && !catMenuRef.current.contains(e.target)) {
@@ -49,7 +50,6 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /* Ngarko kategorit nga DB */
   useEffect(() => {
     getCategories()
       .then(setCategories)
@@ -82,7 +82,6 @@ export default function Header() {
     setCatMenuOpen(false);
   };
 
-  /* Logout */
   const handleLogout = async () => {
     await logout();
     setUserMenuOpen(false);
@@ -91,7 +90,7 @@ export default function Header() {
 
   return (
     <header className="font-lato">
-      {/* ── Top info bar ── */}
+      {/* Top info bar */}
       <div className="bg-dark text-white px-4 py-2">
         <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-1">
           <div className="flex gap-4 text-xs opacity-80">
@@ -108,7 +107,10 @@ export default function Header() {
                 Mirë se erdhët, {user.emri_plote || user.user_name}!
               </span>
             ) : (
-              <Link to="/login" className="font-black hover:underline">
+              <Link
+                to="/login"
+                className="font-black hover:underline no-underline text-white"
+              >
                 Kyçu / Regjistrohu
               </Link>
             )}
@@ -116,10 +118,13 @@ export default function Header() {
         </div>
       </div>
 
-      {/* ── Main navbar ── */}
+      {/* Main navbar */}
       <div className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center gap-3">
-          <Link to="/" className="flex items-center gap-2 shrink-0">
+          <Link
+            to="/"
+            className="flex items-center gap-2 shrink-0 no-underline"
+          >
             <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-white font-black text-lg">
               P
             </div>
@@ -184,7 +189,7 @@ export default function Header() {
           <div className="flex items-center gap-1 shrink-0">
             <Link
               to="/wishlist"
-              className="hidden sm:flex flex-col items-center p-2 text-gray-500 hover:text-primary transition-colors relative"
+              className="hidden sm:flex flex-col items-center p-2 text-gray-500 hover:text-primary transition-colors relative no-underline"
             >
               <span className="text-xl">🤍</span>
               <span className="text-xs">Wishlist</span>
@@ -197,7 +202,7 @@ export default function Header() {
 
             <Link
               to="/cart"
-              className="relative flex flex-col items-center p-2 text-gray-500 hover:text-primary transition-colors"
+              className="relative flex flex-col items-center p-2 text-gray-500 hover:text-primary transition-colors no-underline"
             >
               <span className="text-xl">🛒</span>
               <span className="hidden sm:block text-xs">Shporta</span>
@@ -208,7 +213,6 @@ export default function Header() {
               )}
             </Link>
 
-            {/* Account dropdown — me logout */}
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -224,7 +228,6 @@ export default function Header() {
                 <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-hover border border-bg py-2 z-50">
                   {user ? (
                     <>
-                      {/* User info ne krye */}
                       <div className="px-4 py-2 border-b border-bg mb-1">
                         <p className="font-black text-dark text-sm truncate">
                           {user.emri_plote || user.user_name}
@@ -243,7 +246,7 @@ export default function Header() {
                         <Link
                           to="/admin"
                           onClick={() => setUserMenuOpen(false)}
-                          className="block px-4 py-2 text-sm font-black text-primary hover:bg-bg transition-colors"
+                          className="block px-4 py-2 text-sm font-black text-primary hover:bg-bg transition-colors no-underline"
                         >
                           ⚙️ Admin Panel
                         </Link>
@@ -252,7 +255,7 @@ export default function Header() {
                       <Link
                         to="/profile"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
+                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors no-underline"
                       >
                         👤 Profili Im
                       </Link>
@@ -260,7 +263,7 @@ export default function Header() {
                       <Link
                         to="/my-orders"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
+                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors no-underline"
                       >
                         📦 Porositë e Mia
                       </Link>
@@ -268,14 +271,14 @@ export default function Header() {
                       <Link
                         to="/wishlist"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
+                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors no-underline"
                       >
                         🤍 Lista e Favoriteve
                       </Link>
                       <Link
                         to="/cart"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
+                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors no-underline"
                       >
                         🛒 Shporta
                       </Link>
@@ -294,14 +297,14 @@ export default function Header() {
                       <Link
                         to="/login"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
+                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors no-underline"
                       >
                         🔑 Kyçu
                       </Link>
                       <Link
                         to="/register"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
+                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors no-underline"
                       >
                         ✍️ Regjistrohu
                       </Link>
@@ -309,14 +312,14 @@ export default function Header() {
                       <Link
                         to="/wishlist"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
+                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors no-underline"
                       >
                         🤍 Lista e Favoriteve
                       </Link>
                       <Link
                         to="/cart"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors"
+                        className="block px-4 py-2 text-sm font-black text-dark hover:bg-bg transition-colors no-underline"
                       >
                         🛒 Shporta
                       </Link>
@@ -338,20 +341,29 @@ export default function Header() {
         {/* Desktop nav links */}
         <div className="hidden md:block border-t border-bg">
           <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto">
-            {NAV_LINKS.map((link, i) => (
-              <button
-                key={link.label}
-                onClick={() => handleNavClick(link)}
-                className={`px-3 py-2 text-sm font-black whitespace-nowrap border-0 cursor-pointer transition-colors bg-transparent
-                  ${
-                    i === 0
-                      ? "text-primary border-b-2 border-primary"
-                      : "text-dark hover:text-primary border-b-2 border-transparent hover:border-primary"
-                  }`}
-              >
-                {link.label}
-              </button>
-            ))}
+            {NAV_LINKS.map((link) => {
+              /* Kontrollo nese ky link eshte aktiv */
+              const isActive = link.path
+                ? window.location.pathname === link.path
+                : window.location.search.includes(
+                    `cat=${encodeURIComponent(link.cat || "")}`,
+                  );
+
+              return (
+                <button
+                  key={link.label}
+                  onClick={() => handleNavClick(link)}
+                  className={`px-3 py-2 text-sm font-black whitespace-nowrap border-0 cursor-pointer transition-colors bg-transparent
+            ${
+              isActive
+                ? "text-primary border-b-2 border-primary"
+                : "text-dark hover:text-primary border-b-2 border-transparent hover:border-primary"
+            }`}
+                >
+                  {link.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -371,7 +383,7 @@ export default function Header() {
             <Link
               to="/wishlist"
               onClick={() => setMenuOpen(false)}
-              className="block px-3 py-2.5 rounded-xl text-sm font-black text-dark hover:bg-bg transition-colors"
+              className="block px-3 py-2.5 rounded-xl text-sm font-black text-dark hover:bg-bg transition-colors no-underline"
             >
               🤍 Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
             </Link>
