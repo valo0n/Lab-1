@@ -1,20 +1,8 @@
 /* Ticker, CategoriesStrip, SectionHeader — krejt nga API */
 import { useState, useEffect } from "react";
-import { getCategories } from "../../../lib/api";
+import { Link } from "react-router-dom";
+import { getCategories, getProducts } from "../../../lib/api";
 
-/* Items shown in the scrolling ticker strip */
-const TICKER_ITEMS = [
-  "📱 iPhone 15 Pro Max — €1,299",
-  "💻 MacBook Pro M3 — €1,999",
-  "🎮 PS5 Slim — €399",
-  "🎧 AirPods Pro — €219",
-  "⌚ Apple Watch Ultra — €749",
-  '🖥️ Sony OLED 65" — €2,499',
-  "🎧 Sony WH-1000XM5 — €279",
-  "🖱️ Logitech MX Master — €89",
-];
-
-/* Default emoji per kategori nese DB nuk ka ikone */
 const DEFAULT_EMOJI = {
   Smartphones: "📱",
   Laptops: "💻",
@@ -26,19 +14,48 @@ const DEFAULT_EMOJI = {
   Accessories: "🔌",
 };
 
-/* ── Ticker ── */
+/* ── Ticker — tani DINAMIK nga DB me link te produkti ── */
 export function Ticker() {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    /* Merr produktet e fundit (8) nga DB */
+    getProducts({ limit: 12 })
+      .then((data) => setProducts(data))
+      .catch((err) => console.error("Ticker error:", err));
+  }, []);
+
+  if (products.length === 0) {
+    return (
+      <div className="bg-primary overflow-hidden py-2.5">
+        <div className="text-center text-white font-black text-sm">
+          ⚡ Mirë se erdhët në Paradox Tech!
+        </div>
+      </div>
+    );
+  }
+
+  /* Dyfishoj produktet që animacioni të jetë i pandërprerë */
+  const tickerProducts = [...products, ...products];
+
   return (
     <div className="bg-primary overflow-hidden py-2.5">
       <div className="ticker-anim">
-        {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
-          <span
-            key={i}
-            className="text-white font-black text-sm pl-10 whitespace-nowrap"
-          >
-            ⚡ {item}
-          </span>
-        ))}
+        {tickerProducts.map((p, i) => {
+          const emoji =
+            p.categories?.ikona ||
+            DEFAULT_EMOJI[p.categories?.emertimi] ||
+            "📦";
+          return (
+            <Link
+              key={`${p.id}-${i}`}
+              to={`/product/${p.id}`}
+              className="text-white font-black text-sm pl-10 whitespace-nowrap no-underline hover:opacity-80 transition-opacity"
+            >
+              ⚡ {emoji} {p.emertimi} — €{parseFloat(p.cmimi).toLocaleString()}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
@@ -49,7 +66,7 @@ export function SectionHeader({ title, sub, onMore }) {
   return (
     <div className="flex items-center justify-between mb-5">
       <div className="flex items-center gap-3">
-        <div className="w-1 h-7 bg-primary rounded-full shrink-0" />
+        <div className="w-1 h-7 bg-primary rounded-full flex-shrink-0" />
         <div>
           <h2 className="font-black text-xl text-dark font-lato">{title}</h2>
           {sub && <p className="text-xs text-muted mt-0.5">{sub}</p>}
@@ -67,7 +84,7 @@ export function SectionHeader({ title, sub, onMore }) {
   );
 }
 
-/* ── CategoriesStrip — tani nga DB ── */
+/* ── CategoriesStrip — nga DB ── */
 export function CategoriesStrip({ selectedCat, onSelect }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
