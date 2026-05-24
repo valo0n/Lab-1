@@ -1,4 +1,4 @@
-/* ProductCard — perdor strukture nga DB me Link te ProductDetail */
+/* ProductCard — me foto reale nese ka URL, ndryshe emoji */
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext";
@@ -34,12 +34,11 @@ export default function ProductCard({ product: p }) {
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
   const [added, setAdded] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const price = parseFloat(p.cmimi);
-  const oldPrice = p.cmimi_zbritjes ? parseFloat(p.cmimi_zbritjes) : null;
   const showOldPrice =
     p.cmimi_zbritjes && parseFloat(p.cmimi_zbritjes) > parseFloat(p.cmimi);
-
   const disc = showOldPrice
     ? Math.round(
         ((parseFloat(p.cmimi_zbritjes) - price) /
@@ -47,9 +46,9 @@ export default function ProductCard({ product: p }) {
           100,
       )
     : null;
-
   const emoji =
     p.categories?.ikona || CATEGORY_EMOJI[p.categories?.emertimi] || "📦";
+  const hasImage = p.foto_kryesore && !imgError;
 
   const cartProduct = {
     id: p.id,
@@ -58,6 +57,7 @@ export default function ProductCard({ product: p }) {
     price: price,
     old: showOldPrice ? parseFloat(p.cmimi_zbritjes) : null,
     emoji,
+    image: p.foto_kryesore,
   };
 
   const inWishlist = isInWishlist(p.id);
@@ -79,10 +79,19 @@ export default function ProductCard({ product: p }) {
   return (
     <Link to={`/product/${p.id}`} className="block no-underline group">
       <div className="bg-white rounded-xl border border-bg shadow-card hover:shadow-hover hover:-translate-y-1 transition-all duration-200 overflow-hidden cursor-pointer">
-        <div className="relative flex items-center justify-center bg-bg h-40">
-          <span className="text-6xl select-none group-hover:scale-110 transition-transform">
-            {emoji}
-          </span>
+        <div className="relative flex items-center justify-center bg-bg h-40 overflow-hidden">
+          {hasImage ? (
+            <img
+              src={p.foto_kryesore}
+              alt={p.emertimi}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <span className="text-6xl select-none group-hover:scale-110 transition-transform">
+              {emoji}
+            </span>
+          )}
 
           {disc && (
             <span className="absolute top-2 left-2 bg-danger text-white text-xs font-black px-2 py-0.5 rounded-lg">
@@ -104,7 +113,7 @@ export default function ProductCard({ product: p }) {
             {p.marka || "Paradox"}
           </p>
 
-          <h3 className="font-black text-sm text-dark leading-snug mb-2 line-clamp-2 font-lato group-hover:text-primary transition-colors">
+          <h3 className="font-black text-sm text-dark leading-snug mb-2 line-clamp-2 group-hover:text-primary transition-colors">
             {p.emertimi}
           </h3>
 
@@ -115,7 +124,7 @@ export default function ProductCard({ product: p }) {
 
           <div className="flex items-center justify-between mb-2.5">
             <div className="flex items-center gap-1.5">
-              <span className="text-base font-black text-primary font-lato">
+              <span className="text-base font-black text-primary">
                 €{price.toLocaleString()}
               </span>
               {showOldPrice && (
