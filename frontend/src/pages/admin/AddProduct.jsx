@@ -1,564 +1,318 @@
-/* AddProduct — formular per shtimin e produkteve te reja - LIDHUR ME API */
-import { useState, useRef, useEffect } from "react";
+/* AddProduct — krijim i produktit te ri me foto URL */
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { createProduct, getCategories } from "../../lib/api";
 
-const TAGS = [
-  "Featured",
-  "New Arrival",
-  "Best Seller",
-  "On Sale",
-  "Limited Edition",
-];
-const COLORS = [
-  { hex: "#c1e6ba", label: "Green" },
-  { hex: "#fbcfe8", label: "Pink" },
-  { hex: "#e5e7eb", label: "Gray" },
-  { hex: "#fef3c7", label: "Yellow" },
-  { hex: "#1f2937", label: "Black" },
-];
-
 export default function AddProduct() {
-  /* Form state */
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [discount, setDiscount] = useState("");
-  const [taxIncluded, setTaxIncluded] = useState("yes");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [stockQty, setStockQty] = useState("Unlimited");
-  const [stockStatus, setStockStatus] = useState("In Stock");
-  const [unlimited, setUnlimited] = useState(true);
-  const [featured, setFeatured] = useState(true);
-  const [category, setCategory] = useState("");
-  const [tag, setTag] = useState("");
-  const [selectedColors, setSelectedColors] = useState([]);
-  const [mainImage, setMainImage] = useState(null);
-  const [thumbnails, setThumbnails] = useState([]);
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState([]);
+  const [saving, setSaving] = useState(false);
 
-  /* Te dhena nga DB */
-  const [dbCategories, setDbCategories] = useState([]);
-  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({
+    emertimi: "",
+    pershkrimi: "",
+    cmimi: "",
+    cmimi_zbritjes: "",
+    kategoria_id: "",
+    marka: "",
+    modeli: "",
+    sku: "",
+    sasia_stokut: 1,
+    garancia_muaj: 12,
+    foto_kryesore: "",
+  });
 
-  const mainFileRef = useRef(null);
-  const thumbFileRef = useRef(null);
-
-  /* Ngarko kategorit nga DB ne fillim */
   useEffect(() => {
-    getCategories()
-      .then(setDbCategories)
-      .catch((err) => console.error("Error loading categories:", err));
+    getCategories().then(setCategories).catch(console.error);
   }, []);
 
-  /* Llogarit cmimin e shitjes */
-  const salePrice = (
-    parseFloat(price || 0) - parseFloat(discount || 0)
-  ).toFixed(2);
-
-  /* Toggle color */
-  const toggleColor = (hex) => {
-    setSelectedColors((prev) =>
-      prev.includes(hex) ? prev.filter((c) => c !== hex) : [...prev, hex],
-    );
+  const handleChange = (field, value) => {
+    setForm({ ...form, [field]: value });
   };
 
-  /* Upload foto kryesore */
-  const handleMainImage = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => setMainImage(ev.target.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  /* Upload thumbnail */
-  const handleThumbnail = (e) => {
-    const files = Array.from(e.target.files);
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setThumbnails((prev) => [...prev, ev.target.result]);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
-  /* Hiq thumbnail */
-  const removeThumb = (idx) => {
-    setThumbnails((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  /* Reset form pas suksesit */
-  const resetForm = () => {
-    setName("");
-    setDescription("");
-    setPrice("");
-    setDiscount("");
-    setCategory("");
-    setTag("");
-    setSelectedColors([]);
-    setMainImage(null);
-    setThumbnails([]);
-    setStockQty("Unlimited");
-    setUnlimited(true);
-  };
-
-  /* Submit - LIDH ME API */
   const handlePublish = async () => {
-    /* Validim */
-    if (!name.trim() || !price || !category) {
+    if (!form.emertimi.trim() || !form.cmimi || !form.kategoria_id) {
       alert("Plotëso Emrin, Çmimin dhe Kategorinë!");
       return;
     }
 
-    setSubmitting(true);
+    setSaving(true);
     try {
-      /* Gjej kategorinë në DB sipas emrit */
-      const categoryObj = dbCategories.find((c) => c.emertimi === category);
-      if (!categoryObj) {
-        alert("Kategoria nuk u gjet ne databazë");
-        setSubmitting(false);
-        return;
-      }
-
-      /* Pergatit te dhenat per backend */
-      const data = {
-        emertimi: name,
-        kategoria_id: categoryObj.id,
-        marka: tag || null,
-        pershkrimi: description || null,
-        cmimi: parseFloat(price),
-        cmimi_zbritjes: discount ? parseFloat(discount) : null,
-        sasia_stokut: unlimited ? 999 : parseInt(stockQty) || 0,
-        garancia_muaj: 12,
-        foto_kryesore: mainImage || null,
-      };
-
-      /* Therrit API */
-      await createProduct(data);
-      alert(`✅ Produkti "${name}" u publikua me sukses në databazë!`);
-      resetForm();
+      await createProduct({
+        ...form,
+        cmimi: parseFloat(form.cmimi),
+        cmimi_zbritjes: form.cmimi_zbritjes
+          ? parseFloat(form.cmimi_zbritjes)
+          : null,
+        kategoria_id: parseInt(form.kategoria_id),
+        sasia_stokut: parseInt(form.sasia_stokut) || 0,
+        garancia_muaj: parseInt(form.garancia_muaj) || 12,
+      });
+      alert(`✅ Produkti "${form.emertimi}" u publikua me sukses!`);
+      navigate("/admin/products");
     } catch (err) {
-      console.error("Publish error:", err);
-      alert(`❌ Gabim: ${err.data?.error || err.message || "Nuk u publikua"}`);
+      alert(`Gabim: ${err.data?.error || err.message}`);
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
-  };
-
-  const handleSaveDraft = () => {
-    alert(`Produkti "${name}" u ruajt si draft.`);
   };
 
   return (
     <div className="space-y-5">
-      {/* Title + Top actions */}
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-xl font-black text-dark">Add New Product</h2>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="bg-white border border-bg rounded-full px-4 py-2.5 flex items-center gap-2 w-72">
-            <input
-              type="text"
-              placeholder="Search product for add"
-              className="bg-transparent outline-none text-sm flex-1 font-lato"
-            />
-            <span className="text-muted text-sm">🔍</span>
-          </div>
-          <button
-            onClick={handlePublish}
-            disabled={submitting}
-            className="bg-primary hover:bg-green-600 text-white font-black text-sm px-5 py-2.5 rounded-full border-0 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? "Duke ruajtur..." : "Publish Product"}
-          </button>
-          <button
-            onClick={handleSaveDraft}
-            disabled={submitting}
-            className="bg-white border border-bg text-dark font-black text-sm px-5 py-2.5 rounded-full cursor-pointer hover:bg-bg transition-colors flex items-center gap-2 disabled:opacity-50"
-          >
-            💾 Save to draft
-          </button>
-          <button className="w-11 h-11 bg-white border border-bg rounded-full flex items-center justify-center cursor-pointer hover:bg-bg transition-colors text-primary">
-            ⊕
-          </button>
-        </div>
+        <button
+          onClick={handlePublish}
+          disabled={saving}
+          className="bg-primary hover:bg-green-600 text-white font-black text-sm px-6 py-2.5 rounded-full border-0 cursor-pointer disabled:opacity-50 transition-colors"
+        >
+          {saving ? "Duke ruajtur..." : "💾 Publish Product"}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* ── LEFT: Main form (2 cols) ── */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card space-y-6">
+        {/* LEFT - Form details */}
+        <div className="lg:col-span-2 space-y-5">
           {/* Basic Details */}
-          <div>
-            <h3 className="text-lg font-black text-dark mb-4">Basic Details</h3>
+          <div className="bg-white rounded-2xl shadow-card p-5">
+            <h3 className="font-black text-dark text-lg mb-4">Basic Details</h3>
 
-            <div className="mb-4">
-              <label className="block text-sm font-black text-dark mb-2">
-                Product Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="iPhone 15 Pro Max"
-                className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-black text-dark mb-2">
-                Product Description
-              </label>
-              <div className="relative">
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={5}
-                  placeholder="Pershkrimi i produktit..."
-                  className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary resize-none"
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-black text-dark mb-2">
+                  Product Name *
+                </label>
+                <input
+                  type="text"
+                  value={form.emertimi}
+                  onChange={(e) => handleChange("emertimi", e.target.value)}
+                  placeholder="iPhone 17 Pro Max"
+                  className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
                 />
-                <div className="absolute bottom-3 right-3 flex gap-2">
-                  <button className="text-muted hover:text-primary bg-transparent border-0 cursor-pointer text-lg">
-                    ✏️
-                  </button>
-                  <button className="text-muted hover:text-primary bg-transparent border-0 cursor-pointer text-lg">
-                    ✨
-                  </button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-black text-dark mb-2">
+                  Product Description
+                </label>
+                <textarea
+                  value={form.pershkrimi}
+                  onChange={(e) => handleChange("pershkrimi", e.target.value)}
+                  rows={4}
+                  placeholder="Përshkrim i produktit..."
+                  className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-black text-dark mb-2">
+                    Marka
+                  </label>
+                  <input
+                    type="text"
+                    value={form.marka}
+                    onChange={(e) => handleChange("marka", e.target.value)}
+                    placeholder="Apple"
+                    className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+                  />
                 </div>
+                <div>
+                  <label className="block text-sm font-black text-dark mb-2">
+                    Modeli
+                  </label>
+                  <input
+                    type="text"
+                    value={form.modeli}
+                    onChange={(e) => handleChange("modeli", e.target.value)}
+                    placeholder="A2849"
+                    className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-black text-dark mb-2">
+                  SKU
+                </label>
+                <input
+                  type="text"
+                  value={form.sku}
+                  onChange={(e) => handleChange("sku", e.target.value)}
+                  placeholder="IPHONE-17-PRO"
+                  className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+                />
               </div>
             </div>
           </div>
 
           {/* Pricing */}
-          <div>
-            <h3 className="text-lg font-black text-dark mb-4">Pricing</h3>
+          <div className="bg-white rounded-2xl shadow-card p-5">
+            <h3 className="font-black text-dark text-lg mb-4">Pricing</h3>
 
-            <div className="mb-4">
-              <label className="block text-sm font-black text-dark mb-2">
-                Product Price
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={price ? `$${price}` : ""}
-                  onChange={(e) =>
-                    setPrice(e.target.value.replace(/[^0-9.]/g, ""))
-                  }
-                  placeholder="$0.00"
-                  className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary"
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 cursor-pointer">
-                  <span className="text-xl">🇺🇸</span>
-                  <span className="text-muted text-xs">▼</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-black text-dark mb-2">
-                  Discounted Price{" "}
-                  <span className="text-muted font-normal">(Optional)</span>
+                  Product Price *
                 </label>
-                <div className="bg-light/40 rounded-xl px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="bg-primary text-white px-3 py-1 rounded-lg text-xs font-black">
-                      $
-                    </span>
-                    <input
-                      type="text"
-                      value={discount}
-                      onChange={(e) =>
-                        setDiscount(e.target.value.replace(/[^0-9.]/g, ""))
-                      }
-                      placeholder="0"
-                      className="bg-transparent outline-none text-sm w-20 font-black text-dark"
-                    />
-                  </div>
-                  {price && discount && (
-                    <span className="text-xs text-muted">
-                      Sale= ${salePrice}
-                    </span>
-                  )}
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+                    €
+                  </span>
+                  <input
+                    type="number"
+                    value={form.cmimi}
+                    onChange={(e) => handleChange("cmimi", e.target.value)}
+                    placeholder="1300"
+                    className="w-full pl-7 pr-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+                  />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-black text-dark mb-2">
-                  Tax Included
+                  Çmimi i Vjetër (Optional)
                 </label>
-                <div className="flex gap-6 py-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tax"
-                      checked={taxIncluded === "yes"}
-                      onChange={() => setTaxIncluded("yes")}
-                      className="accent-primary w-4 h-4"
-                    />
-                    <span className="text-sm text-dark font-black">Yes</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tax"
-                      checked={taxIncluded === "no"}
-                      onChange={() => setTaxIncluded("no")}
-                      className="accent-primary w-4 h-4"
-                    />
-                    <span className="text-sm text-dark font-black">No</span>
-                  </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+                    €
+                  </span>
+                  <input
+                    type="number"
+                    value={form.cmimi_zbritjes}
+                    onChange={(e) =>
+                      handleChange("cmimi_zbritjes", e.target.value)
+                    }
+                    placeholder="1500"
+                    className="w-full pl-7 pr-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+                  />
                 </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-black text-dark mb-2">
-                Expiration
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary"
-                />
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary"
-                />
               </div>
             </div>
           </div>
 
           {/* Inventory */}
-          <div>
-            <h3 className="text-lg font-black text-dark mb-4">Inventory</h3>
+          <div className="bg-white rounded-2xl shadow-card p-5">
+            <h3 className="font-black text-dark text-lg mb-4">Inventory</h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-black text-dark mb-2">
-                  Stock Quantity
+                  Sasia në Stok
                 </label>
                 <input
-                  type="text"
-                  value={stockQty}
-                  onChange={(e) => setStockQty(e.target.value)}
-                  disabled={unlimited}
-                  className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary disabled:opacity-50"
+                  type="number"
+                  value={form.sasia_stokut}
+                  onChange={(e) => handleChange("sasia_stokut", e.target.value)}
+                  className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
                 />
               </div>
               <div>
                 <label className="block text-sm font-black text-dark mb-2">
-                  Stock Status
+                  Garancia (muaj)
                 </label>
-                <select
-                  value={stockStatus}
-                  onChange={(e) => setStockStatus(e.target.value)}
-                  className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary bg-white cursor-pointer"
-                >
-                  <option>In Stock</option>
-                  <option>Out of Stock</option>
-                  <option>Low Stock</option>
-                </select>
+                <input
+                  type="number"
+                  value={form.garancia_muaj}
+                  onChange={(e) =>
+                    handleChange("garancia_muaj", e.target.value)
+                  }
+                  className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+                />
               </div>
             </div>
-
-            <div className="flex items-center gap-3 mb-4">
-              <button
-                onClick={() => {
-                  setUnlimited(!unlimited);
-                  if (!unlimited) setStockQty("Unlimited");
-                }}
-                className={`relative w-12 h-6 rounded-full transition-colors border-0 cursor-pointer ${
-                  unlimited ? "bg-primary" : "bg-gray-300"
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                    unlimited ? "translate-x-6" : "translate-x-0.5"
-                  }`}
-                />
-              </button>
-              <span className="text-sm font-black text-dark">Unlimited</span>
-            </div>
-
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={featured}
-                onChange={(e) => setFeatured(e.target.checked)}
-                className="accent-primary w-5 h-5"
-              />
-              <span className="text-sm text-dark">
-                Highlight this product in a featured section.
-              </span>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              onClick={handleSaveDraft}
-              disabled={submitting}
-              className="bg-white border border-bg text-dark font-black text-sm px-5 py-2.5 rounded-xl cursor-pointer hover:bg-bg transition-colors flex items-center gap-2 disabled:opacity-50"
-            >
-              💾 Save to draft
-            </button>
-            <button
-              onClick={handlePublish}
-              disabled={submitting}
-              className="bg-primary hover:bg-green-600 text-white font-black text-sm px-5 py-2.5 rounded-xl border-0 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? "Duke ruajtur..." : "Publish Product"}
-            </button>
           </div>
         </div>
 
-        {/* ── RIGHT: Image upload + Categories ── */}
+        {/* RIGHT - Image + Category */}
         <div className="space-y-5">
-          <div className="bg-white rounded-2xl p-5 shadow-card">
-            <h3 className="text-lg font-black text-dark mb-4">
-              Upload Product Image
+          {/* Product Image - URL */}
+          <div className="bg-white rounded-2xl shadow-card p-5">
+            <h3 className="font-black text-dark text-lg mb-4">
+              📷 Foto e Produktit
             </h3>
 
-            <p className="text-sm font-black text-dark mb-2">Product Image</p>
-            <div className="border-2 border-dashed border-bg rounded-2xl p-4 mb-4 relative">
-              {mainImage ? (
-                <img
-                  src={mainImage}
-                  alt="Product"
-                  className="w-full h-64 object-contain"
-                />
-              ) : (
-                <div className="h-64 flex items-center justify-center bg-bg/50 rounded-xl">
-                  <span className="text-6xl">📱</span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between mt-3">
-                <button
-                  onClick={() => mainFileRef.current?.click()}
-                  className="flex items-center gap-2 text-sm font-black text-dark bg-transparent border-0 cursor-pointer"
-                >
-                  📷 Browse
-                </button>
-                <button
-                  onClick={() => mainFileRef.current?.click()}
-                  className="flex items-center gap-2 text-sm font-black text-dark bg-transparent border-0 cursor-pointer"
-                >
-                  🔄 Replace
-                </button>
-              </div>
+            <div className="mb-4">
+              <label className="block text-sm font-black text-dark mb-2">
+                URL i Imazhit
+              </label>
               <input
-                ref={mainFileRef}
-                type="file"
-                accept="image/*"
-                onChange={handleMainImage}
-                className="hidden"
+                type="text"
+                value={form.foto_kryesore}
+                onChange={(e) => handleChange("foto_kryesore", e.target.value)}
+                placeholder="https://example.com/foto.jpg"
+                className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
               />
+              <p className="text-xs text-muted mt-1">
+                Ngjit URL nga interneti (Unsplash, Google Images)
+              </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              {thumbnails.map((t, i) => (
-                <div
-                  key={i}
-                  className="relative aspect-square bg-bg rounded-xl overflow-hidden"
-                >
-                  <img src={t} alt="" className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => removeThumb(i)}
-                    className="absolute top-1 right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center text-xs cursor-pointer border-0 hover:bg-red-50 text-danger"
-                  >
-                    ✕
-                  </button>
-                </div>
-              ))}
-
-              <button
-                onClick={() => thumbFileRef.current?.click()}
-                className="aspect-square border-2 border-dashed border-bg rounded-xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary transition-colors bg-transparent text-primary"
+            {/* Preview */}
+            <div className="bg-bg rounded-xl p-4 min-h-[200px] flex items-center justify-center">
+              {form.foto_kryesore ? (
+                <img
+                  src={form.foto_kryesore}
+                  alt="Preview"
+                  className="max-w-full max-h-[200px] rounded-lg object-contain"
+                  onError={(e) => {
+                    e.target.style.display = "none";
+                    e.target.nextSibling.style.display = "block";
+                  }}
+                />
+              ) : null}
+              <p
+                className="text-muted text-sm text-center"
+                style={{ display: form.foto_kryesore ? "none" : "block" }}
               >
-                <span className="text-2xl">⊕</span>
-                <span className="text-xs font-black">Add Image</span>
-              </button>
-              <input
-                ref={thumbFileRef}
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleThumbnail}
-                className="hidden"
-              />
+                {form.foto_kryesore ? "⚠️ URL e pavlefshme" : "🖼️ Preview këtu"}
+              </p>
+            </div>
+
+            {/* Suggestions */}
+            <div className="mt-3">
+              <p className="text-xs font-black text-muted mb-1">
+                💡 Burime falas:
+              </p>
+              <a
+                href="https://unsplash.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline block"
+              >
+                → Unsplash.com (foto profesionale falas)
+              </a>
+              <a
+                href="https://images.google.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-primary hover:underline block"
+              >
+                → Google Images
+              </a>
             </div>
           </div>
 
-          {/* Categories - tani nga DB */}
-          <div className="bg-white rounded-2xl p-5 shadow-card">
-            <h3 className="text-lg font-black text-dark mb-4">Categories</h3>
+          {/* Categories */}
+          <div className="bg-white rounded-2xl shadow-card p-5">
+            <h3 className="font-black text-dark text-lg mb-4">Categories</h3>
 
-            <div className="mb-4">
-              <label className="block text-sm font-black text-dark mb-2">
-                Product Categories
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary bg-white cursor-pointer"
-              >
-                <option value="">Select your product</option>
-                {dbCategories.map((c) => (
-                  <option key={c.id} value={c.emertimi}>
-                    {c.emertimi}
-                  </option>
-                ))}
-              </select>
-              {dbCategories.length === 0 && (
-                <p className="text-xs text-muted mt-1">
-                  Duke ngarkuar kategorit...
-                </p>
-              )}
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-black text-dark mb-2">
-                Product Tag
-              </label>
-              <select
-                value={tag}
-                onChange={(e) => setTag(e.target.value)}
-                className="w-full px-4 py-3 border border-bg rounded-xl text-sm outline-none focus:border-primary bg-white cursor-pointer"
-              >
-                <option value="">Select your product</option>
-                {TAGS.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-black text-dark mb-2">
-                Select your color
-              </label>
-              <div className="flex gap-2 flex-wrap">
-                {COLORS.map((c) => (
-                  <button
-                    key={c.hex}
-                    onClick={() => toggleColor(c.hex)}
-                    title={c.label}
-                    className={`w-11 h-11 rounded-xl cursor-pointer transition-all border-2 ${
-                      selectedColors.includes(c.hex)
-                        ? "border-primary scale-110"
-                        : "border-transparent hover:scale-105"
-                    }`}
-                    style={{ backgroundColor: c.hex }}
-                  />
-                ))}
-              </div>
-            </div>
+            <label className="block text-sm font-black text-dark mb-2">
+              Product Category *
+            </label>
+            <select
+              value={form.kategoria_id}
+              onChange={(e) => handleChange("kategoria_id", e.target.value)}
+              className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary bg-white cursor-pointer"
+            >
+              <option value="">Zgjidh kategorinë</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.ikona} {c.emertimi}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
