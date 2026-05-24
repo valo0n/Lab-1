@@ -1,23 +1,19 @@
-/* App.jsx — krejt route-t e Paradox Tech */
+/* App.jsx — krejt route-t me 5 role */
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-/* Landing & Public pages */
 import LandingPage from "./pages/landing/LandingPage";
 import Shop from "./pages/shop/Shop";
 import ProductDetail from "./pages/shop/ProductDetail";
 
-/* Auth */
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 
-/* Customer pages */
 import Cart from "./pages/cart/Cart";
 import Checkout from "./pages/checkout/Checkout";
 import Wishlist from "./pages/wishlist/Wishlist";
 import MyOrders from "./pages/customer/MyOrders";
 import Profile from "./pages/customer/Profile";
 
-/* Admin */
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import OrderManagement from "./pages/admin/OrderManagement";
@@ -32,30 +28,34 @@ import Suppliers from "./pages/admin/Suppliers";
 import Warranties from "./pages/admin/Warranties";
 import ServiceRequests from "./pages/admin/ServiceRequests";
 
-/* Protect admin routes */
+/* Dashboards per role tjera */
+import TeknikDashboard from "./pages/teknik/TeknikDashboard";
+import ManagerDashboard from "./pages/manager/ManagerDashboard";
+import ShitesDashboard from "./pages/shites/ShitesDashboard";
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* ═══════ PUBLIC PAGES ═══════ */}
+        {/* PUBLIC */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/product/:id" element={<ProductDetail />} />
 
-        {/* ═══════ AUTH ═══════ */}
+        {/* AUTH */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* ═══════ CUSTOMER PAGES ═══════ */}
+        {/* CUSTOMER */}
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/profile" element={<Profile />} />
 
-        {/* ═══════ ADMIN PAGES (Protected) ═══════ */}
+        {/* ADMIN */}
         <Route
           path="/admin"
           element={
@@ -72,13 +72,20 @@ function App() {
           <Route path="suppliers" element={<Suppliers />} />
           <Route path="warranties" element={<Warranties />} />
           <Route path="service-requests" element={<ServiceRequests />} />
-
-          {/* Products */}
           <Route path="products" element={<ProductList />} />
           <Route path="products/add" element={<AddProduct />} />
           <Route path="products/media" element={<ProductMedia />} />
           <Route path="products/reviews" element={<ProductReviews />} />
         </Route>
+
+        {/* TEKNIK */}
+        <Route path="/teknik" element={<TeknikDashboard />} />
+
+        {/* MANAGER */}
+        <Route path="/manager" element={<ManagerDashboard />} />
+
+        {/* SHITES */}
+        <Route path="/shites" element={<ShitesDashboard />} />
       </Routes>
     </BrowserRouter>
   );
