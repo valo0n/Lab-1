@@ -1,4 +1,4 @@
-/* App.jsx — krejt route-t me 5 role */
+/* App.jsx — krejt route-t me 5 role te mbrojtura */
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import LandingPage from "./pages/landing/LandingPage";
@@ -28,7 +28,6 @@ import Suppliers from "./pages/admin/Suppliers";
 import Warranties from "./pages/admin/Warranties";
 import ServiceRequests from "./pages/admin/ServiceRequests";
 
-/* Dashboards per role tjera */
 import TeknikDashboard from "./pages/teknik/TeknikDashboard";
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import ShitesDashboard from "./pages/shites/ShitesDashboard";
@@ -55,11 +54,11 @@ function App() {
         <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/profile" element={<Profile />} />
 
-        {/* ADMIN */}
+        {/* ADMIN - vetem Admin */}
         <Route
           path="/admin"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredRole="Admin">
               <AdminLayout />
             </ProtectedRoute>
           }
@@ -78,14 +77,35 @@ function App() {
           <Route path="products/reviews" element={<ProductReviews />} />
         </Route>
 
-        {/* TEKNIK */}
-        <Route path="/teknik" element={<TeknikDashboard />} />
+        {/* TEKNIK - vetem Teknik */}
+        <Route
+          path="/teknik"
+          element={
+            <ProtectedRoute requiredRole="Teknik">
+              <TeknikDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* MANAGER */}
-        <Route path="/manager" element={<ManagerDashboard />} />
+        {/* MANAGER - vetem Manager */}
+        <Route
+          path="/manager"
+          element={
+            <ProtectedRoute requiredRole="Manager">
+              <ManagerDashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* SHITES */}
-        <Route path="/shites" element={<ShitesDashboard />} />
+        {/* SHITES - vetem Shites */}
+        <Route
+          path="/shites"
+          element={
+            <ProtectedRoute requiredRole="Shites">
+              <ShitesDashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
