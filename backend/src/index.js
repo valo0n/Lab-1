@@ -1,7 +1,9 @@
 /* Index.js - Server backend Paradox Tech */
+/* dotenv ngarkohet i pari, PARA cdo importi tjeter, qe .env te jete gati
+   kur te ngarkohen routes/jwt qe varen nga process.env */
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 
 /* routes */
 import authRoutes from "./routes/auth.js";
@@ -14,8 +16,6 @@ import reviewsRoutes from "./routes/reviews.js";
 import suppliersRoutes from "./routes/suppliers.js";
 import serviceRequestsRoutes from "./routes/service-requests.js";
 import warrantiesRoutes from "./routes/warranties.js";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
