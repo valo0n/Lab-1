@@ -55,16 +55,22 @@ const MENU_ITEMS = [
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const avatarMenuRef = useRef(null);
+  const notifMenuRef = useRef(null);
 
   /* Mbylle dropdown kur klikon jashte */
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (avatarMenuRef.current && !avatarMenuRef.current.contains(e.target)) {
         setAvatarMenuOpen(false);
+      }
+      if (notifMenuRef.current && !notifMenuRef.current.contains(e.target)) {
+        setNotifOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -177,21 +183,50 @@ export default function AdminLayout() {
           <h1 className="text-xl font-black text-dark">Dashboard</h1>
 
           <div className="flex items-center gap-4">
-            {/* Search */}
-            <div className="bg-bg rounded-full px-4 py-2 flex items-center gap-2 w-80">
-              <span className="text-muted text-sm">🔍</span>
+            {/* Search — kerkon produkte dhe shkon te lista */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const q = searchTerm.trim();
+                navigate(
+                  q
+                    ? `/admin/products?q=${encodeURIComponent(q)}`
+                    : "/admin/products",
+                );
+              }}
+              className="bg-bg rounded-full px-4 py-2 flex items-center gap-2 w-80"
+            >
+              <button
+                type="submit"
+                className="text-muted text-sm bg-transparent border-0 cursor-pointer"
+                title="Kërko"
+              >
+                🔍
+              </button>
               <input
                 type="text"
-                placeholder="Search data, users, or reports"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Kërko produkte..."
                 className="bg-transparent outline-none text-sm flex-1 font-lato"
               />
-            </div>
+            </form>
 
             {/* Notifications */}
-            <button className="relative w-10 h-10 bg-bg rounded-full flex items-center justify-center cursor-pointer hover:bg-bg/70 border-0 text-lg">
-              🔔
-              <span className="absolute top-1 right-1 w-2 h-2 bg-danger rounded-full"></span>
-            </button>
+            <div className="relative" ref={notifMenuRef}>
+              <button
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="relative w-10 h-10 bg-bg rounded-full flex items-center justify-center cursor-pointer hover:bg-bg/70 border-0 text-lg"
+              >
+                🔔
+              </button>
+              {notifOpen && (
+                <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-xl shadow-hover border border-bg py-3 px-4 z-50">
+                  <p className="font-black text-dark text-sm mb-1">Njoftimet</p>
+                  <p className="text-xs text-muted">Nuk ka njoftime të reja.</p>
+                </div>
+              )}
+            </div>
 
             {/* ═══════ AVATAR ME DROPDOWN ═══════ */}
             <div className="relative" ref={avatarMenuRef}>

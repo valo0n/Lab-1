@@ -99,6 +99,28 @@ export async function apiRequest(endpoint, options = {}) {
   return data;
 }
 
+/* Ngarko nje foto (multipart) — NUK vendos Content-Type, browser-i e cakton vete boundary-n */
+export async function uploadImage(file) {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const token = getAccessToken();
+  const res = await fetch(`${API_URL}/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const error = new Error(data.error || "Ngarkimi i fotos deshtoi");
+    error.status = res.status;
+    error.data = data;
+    throw error;
+  }
+  return data; // { url, filename }
+}
+
 /* Shkurtimet per metodat e zakonshme */
 export const api = {
   get: (endpoint, opts) => apiRequest(endpoint, { method: "GET", ...opts }),

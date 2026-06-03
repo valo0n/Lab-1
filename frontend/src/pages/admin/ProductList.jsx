@@ -1,6 +1,6 @@
 /* ProductList admin — listim + Edit modal me URL foto + Delete */
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   getProducts,
   deleteProduct,
@@ -20,11 +20,18 @@ const CATEGORY_EMOJI = {
 };
 
 export default function ProductList() {
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+
+  /* Lexo termin e kerkimit nga URL (?q=) — vjen nga search-i i topbar-it */
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q !== null) setSearchQuery(q);
+  }, [searchParams]);
 
   const [editingProduct, setEditingProduct] = useState(null);
   const [editForm, setEditForm] = useState({});

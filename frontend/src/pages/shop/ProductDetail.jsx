@@ -202,12 +202,12 @@ export default function ProductDetail() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* IMAGE */}
-          <div className="bg-white rounded-2xl shadow-card overflow-hidden flex items-center justify-center min-h-[400px] relative">
+          <div className="bg-white rounded-2xl shadow-card overflow-hidden flex items-center justify-center min-h-[400px] relative p-6">
             {hasImage ? (
               <img
                 src={product.foto_kryesore}
                 alt={product.emertimi}
-                className="w-full h-full max-h-[500px] object-cover"
+                className="max-w-full max-h-[460px] object-contain"
                 onError={() => setImgError(true)}
               />
             ) : (

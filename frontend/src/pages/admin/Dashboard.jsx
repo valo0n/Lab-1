@@ -1,5 +1,6 @@
 /* Dashboard — admin dashboard me te dhena reale nga DB */
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { getDashboardStats } from "../../lib/api";
 
 const CATEGORY_EMOJI = {
@@ -17,7 +18,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [reportTab, setReportTab] = useState("this");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -91,9 +92,6 @@ export default function Dashboard() {
               <p className="font-black text-dark text-base">Total Sales</p>
               <p className="text-xs text-muted mt-1">Te gjitha kohrat</p>
             </div>
-            <button className="text-muted bg-transparent border-0 cursor-pointer text-xl">
-              ⋮
-            </button>
           </div>
           <div className="flex items-baseline gap-2 my-4">
             <span className="text-3xl font-black text-dark">
@@ -104,7 +102,10 @@ export default function Dashboard() {
           <p className="text-xs text-muted mb-4">
             Nga {stats.completedOrders} porosi te perfunduara
           </p>
-          <button className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm">
+          <button
+            onClick={() => navigate("/admin/transactions")}
+            className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm"
+          >
             Details
           </button>
         </div>
@@ -116,9 +117,6 @@ export default function Dashboard() {
               <p className="font-black text-dark text-base">Total Orders</p>
               <p className="text-xs text-muted mt-1">Te gjitha porosit</p>
             </div>
-            <button className="text-muted bg-transparent border-0 cursor-pointer text-xl">
-              ⋮
-            </button>
           </div>
           <div className="flex items-baseline gap-2 my-4">
             <span className="text-3xl font-black text-dark">
@@ -129,7 +127,10 @@ export default function Dashboard() {
           <p className="text-xs text-muted mb-4">
             {stats.completedOrders} te perfunduara
           </p>
-          <button className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm">
+          <button
+            onClick={() => navigate("/admin/orders")}
+            className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm"
+          >
             Details
           </button>
         </div>
@@ -143,9 +144,6 @@ export default function Dashboard() {
               </p>
               <p className="text-xs text-muted mt-1">Aktuale</p>
             </div>
-            <button className="text-muted bg-transparent border-0 cursor-pointer text-xl">
-              ⋮
-            </button>
           </div>
           <div className="grid grid-cols-2 gap-2 my-4">
             <div>
@@ -161,7 +159,10 @@ export default function Dashboard() {
               </span>
             </div>
           </div>
-          <button className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm">
+          <button
+            onClick={() => navigate("/admin/orders")}
+            className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm"
+          >
             Details
           </button>
         </div>
@@ -175,28 +176,6 @@ export default function Dashboard() {
             <p className="font-black text-dark text-base">
               Report for this week
             </p>
-            <div className="flex bg-bg rounded-full p-1 gap-1">
-              <button
-                onClick={() => setReportTab("this")}
-                className={`text-xs font-black px-3 py-1 rounded-full border-0 cursor-pointer transition-colors ${
-                  reportTab === "this"
-                    ? "bg-light text-dark"
-                    : "text-muted bg-transparent"
-                }`}
-              >
-                This week
-              </button>
-              <button
-                onClick={() => setReportTab("last")}
-                className={`text-xs font-black px-3 py-1 rounded-full border-0 cursor-pointer transition-colors ${
-                  reportTab === "last"
-                    ? "bg-light text-dark"
-                    : "text-muted bg-transparent"
-                }`}
-              >
-                Last week
-              </button>
-            </div>
           </div>
 
           {/* Stat numbers - reale */}
@@ -300,9 +279,6 @@ export default function Dashboard() {
         <div className="bg-white rounded-2xl p-6 shadow-card">
           <div className="flex items-start justify-between mb-4">
             <p className="font-black text-dark text-base">Inventory Overview</p>
-            <button className="text-muted bg-transparent border-0 cursor-pointer text-xl">
-              ⋮
-            </button>
           </div>
 
           <div className="space-y-4">
@@ -356,7 +332,10 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <button className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm">
+            <button
+              onClick={() => navigate("/admin/products")}
+              className="w-full border-2 border-primary text-primary font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors text-sm"
+            >
               View Insight
             </button>
           </div>
@@ -394,26 +373,30 @@ export default function Dashboard() {
                 {stats.recentOrders.map((order, i) => (
                   <tr key={order.id} className="text-sm border-t border-bg">
                     <td className="py-3.5 text-dark">{i + 1}.</td>
-                    <td className="py-3.5 text-dark font-black">#{order.id}</td>
+                    <td className="py-3.5 text-dark font-black">
+                      {order.customers
+                        ? `${order.customers.emri} ${order.customers.mbiemri}`
+                        : `#${order.id}`}
+                    </td>
                     <td className="py-3.5 text-muted">
-                      {new Date(order.data_porosise).toLocaleDateString()}
+                      {new Date(order.data_porosis).toLocaleDateString()}
                     </td>
                     <td className="py-3.5">
                       <span
                         className={`inline-flex items-center gap-1.5 ${
-                          order.statusi === "completed"
+                          order.statusi_porosis === "completed"
                             ? "text-primary"
-                            : order.statusi === "pending"
+                            : order.statusi_porosis === "pending"
                               ? "text-warning"
                               : "text-danger"
                         }`}
                       >
                         <span className="w-2 h-2 rounded-full bg-current"></span>
-                        {order.statusi}
+                        {order.statusi_porosis}
                       </span>
                     </td>
                     <td className="py-3.5 text-dark font-black text-right">
-                      ${parseFloat(order.totali).toLocaleString()}
+                      ${parseFloat(order.shuma_totale).toLocaleString()}
                     </td>
                   </tr>
                 ))}

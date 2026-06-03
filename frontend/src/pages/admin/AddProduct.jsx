@@ -1,12 +1,13 @@
 /* AddProduct — krijim i produktit te ri me foto URL */
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createProduct, getCategories } from "../../lib/api";
+import { createProduct, getCategories, uploadImage } from "../../lib/api";
 
 export default function AddProduct() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const [form, setForm] = useState({
     emertimi: "",
@@ -28,6 +29,23 @@ export default function AddProduct() {
 
   const handleChange = (field, value) => {
     setForm({ ...form, [field]: value });
+  };
+
+  /* Ngarko foto nga kompjuteri -> merr URL-ne -> vendose te foto_kryesore */
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const { url } = await uploadImage(file);
+      setForm((prev) => ({ ...prev, foto_kryesore: url }));
+    } catch (err) {
+      alert(`Gabim në ngarkim: ${err.data?.error || err.message}`);
+    } finally {
+      setUploading(false);
+      e.target.value = ""; // lejo rizgjedhjen e të njëjtit file
+    }
   };
 
   const handlePublish = async () => {
@@ -232,6 +250,34 @@ export default function AddProduct() {
             <h3 className="font-black text-dark text-lg mb-4">
               📷 Foto e Produktit
             </h3>
+
+            {/* Ngarko foto nga kompjuteri */}
+            <div className="mb-4">
+              <label className="block text-sm font-black text-dark mb-2">
+                Foto nga kompjuteri
+              </label>
+              <label
+                className={`flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed rounded-xl text-sm font-black transition-colors ${
+                  uploading
+                    ? "border-bg text-muted cursor-wait"
+                    : "border-primary/40 text-primary cursor-pointer hover:bg-bg"
+                }`}
+              >
+                {uploading ? "⏳ Duke ngarkuar..." : "📁 Zgjidh foto"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+              <p className="text-xs text-muted mt-1">
+                JPG, PNG, WEBP ose GIF (max 5MB)
+              </p>
+            </div>
+
+            <div className="text-center text-xs text-muted mb-3">— ose —</div>
 
             <div className="mb-4">
               <label className="block text-sm font-black text-dark mb-2">

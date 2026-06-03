@@ -79,12 +79,12 @@ export default function ProductCard({ product: p }) {
   return (
     <Link to={`/product/${p.id}`} className="block no-underline group">
       <div className="bg-white rounded-xl border border-bg shadow-card hover:shadow-hover hover:-translate-y-1 transition-all duration-200 overflow-hidden cursor-pointer">
-        <div className="relative flex items-center justify-center bg-bg h-40 overflow-hidden">
+        <div className="relative flex items-center justify-center bg-white h-40 overflow-hidden">
           {hasImage ? (
             <img
               src={p.foto_kryesore}
               alt={p.emertimi}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
               onError={() => setImgError(true)}
             />
           ) : (

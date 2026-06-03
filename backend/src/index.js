@@ -4,6 +4,8 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
 /* routes */
 import authRoutes from "./routes/auth.js";
@@ -16,12 +18,17 @@ import reviewsRoutes from "./routes/reviews.js";
 import suppliersRoutes from "./routes/suppliers.js";
 import serviceRequestsRoutes from "./routes/service-requests.js";
 import warrantiesRoutes from "./routes/warranties.js";
+import uploadRoutes from "./routes/upload.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
+
+/* Servo fotot e ngarkuara nga backend/uploads ne /uploads */
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 /* Health check */
 app.get("/", (req, res) => {
@@ -43,6 +50,7 @@ app.use("/api/reviews", reviewsRoutes);
 app.use("/api/suppliers", suppliersRoutes);
 app.use("/api/service-requests", serviceRequestsRoutes);
 app.use("/api/warranties", warrantiesRoutes);
+app.use("/api/upload", uploadRoutes);
 
 /* 404 handler */
 app.use((req, res) => {
