@@ -184,6 +184,7 @@ export default function ProductMedia() {
                 <div className="bg-bg h-32 flex items-center justify-center relative">
                   {p.foto_kryesore ? (
                     <img
+                      loading="lazy"
                       src={p.foto_kryesore}
                       alt={p.emertimi}
                       className="w-full h-full object-cover"
@@ -247,6 +248,7 @@ export default function ProductMedia() {
                         <div className="w-12 h-12 bg-bg rounded-xl flex items-center justify-center text-2xl">
                           {p.foto_kryesore ? (
                             <img
+                              loading="lazy"
                               src={p.foto_kryesore}
                               alt=""
                               className="w-full h-full object-cover rounded-xl"
@@ -308,6 +310,7 @@ export default function ProductMedia() {
             <div className="bg-bg h-64 flex items-center justify-center relative rounded-t-2xl">
               {selectedProduct.foto_kryesore ? (
                 <img
+                  loading="lazy"
                   src={selectedProduct.foto_kryesore}
                   alt={selectedProduct.emertimi}
                   className="w-full h-full object-cover rounded-t-2xl"

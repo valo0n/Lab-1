@@ -195,6 +195,7 @@ export default function ProductList() {
                           <div className="w-12 h-12 bg-bg rounded-xl flex items-center justify-center overflow-hidden">
                             {p.foto_kryesore ? (
                               <img
+                                loading="lazy"
                                 src={p.foto_kryesore}
                                 alt={p.emertimi}
                                 className="w-full h-full object-cover"
@@ -341,6 +342,7 @@ export default function ProductList() {
                 {editForm.foto_kryesore && (
                   <div className="mt-2 bg-bg rounded-xl p-3 flex items-center justify-center">
                     <img
+                      loading="lazy"
                       src={editForm.foto_kryesore}
                       alt="Preview"
                       className="max-h-32 rounded-lg object-contain"

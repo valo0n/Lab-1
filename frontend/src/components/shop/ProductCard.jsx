@@ -85,6 +85,7 @@ export default function ProductCard({ product: p }) {
               src={p.foto_kryesore}
               alt={p.emertimi}
               className="w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
               onError={() => setImgError(true)}
             />
           ) : (

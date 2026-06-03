@@ -208,6 +208,7 @@ export default function ProductDetail() {
                 src={product.foto_kryesore}
                 alt={product.emertimi}
                 className="max-w-full max-h-[460px] object-contain"
+                loading="lazy"
                 onError={() => setImgError(true)}
               />
             ) : (
