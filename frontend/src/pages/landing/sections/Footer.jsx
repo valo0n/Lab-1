@@ -1,39 +1,48 @@
+import { Link } from "react-router-dom";
+
 const FOOTER_COLS = [
   {
     title: "KATEGORITE",
     links: [
-      "Smartphones",
-      "Laptops",
-      "TV & Monitor",
-      "Audio",
-      "Gaming",
-      "Wearables",
+      { label: "Smartphones", to: "/shop?cat=Smartphones" },
+      { label: "Laptops", to: "/shop?cat=Laptops" },
+      { label: "TV & Monitor", to: "/shop?cat=TV%20%26%20Monitor" },
+      { label: "Audio", to: "/shop?cat=Audio" },
+      { label: "Gaming", to: "/shop?cat=Gaming" },
+      { label: "Wearables", to: "/shop?cat=Wearables" },
     ],
   },
   {
     title: "LLOGARIA",
     links: [
-      "Kyçu",
-      "Regjistrohu",
-      "Porositë e Mia",
-      "Wishlist",
-      "Garancitë",
-      "Servisi",
+      { label: "Kyçu", to: "/login" },
+      { label: "Regjistrohu", to: "/register" },
+      { label: "Porositë e Mia", to: "/my-orders" },
+      { label: "Wishlist", to: "/wishlist" },
+      { label: "Shporta", to: "/cart" },
+      { label: "Profili", to: "/profile" },
     ],
   },
   {
     title: "INFORMACION",
-    links: ["Rreth Nesh", "Kontakt", "Blog", "Karriera", "Politika", "FAQ"],
+    links: [
+      { label: "Rreth Nesh" },
+      { label: "Kontakt" },
+      { label: "Blog" },
+      { label: "Karriera" },
+      { label: "Politika" },
+      { label: "FAQ" },
+    ],
   },
   {
     title: "KONTAKT",
     links: [
-      "+383 44 123 456",
-      "info@paradox.com",
-      "Rr. Nënë Tereza",
-      "Prishtinë, Kosovë",
-      "09:00 - 18:00",
-      "E Hënë - E Shtunë",
+      { label: "+383 44 123 456" },
+      { label: "info@paradox.com" },
+      { label: "Rr. Nënë Tereza" },
+      { label: "Prishtinë, Kosovë" },
+      { label: "09:00 - 18:00" },
+      { label: "E Hënë - E Shtunë" },
     ],
   },
 ];
@@ -120,10 +129,17 @@ export default function Footer() {
               {/* Lista e linkeve */}
               <ul className="space-y-2">
                 {col.links.map((link) => (
-                  <li key={link}>
-                    <span className="text-sm text-light hover:text-white cursor-pointer transition-colors">
-                      {link}
-                    </span>
+                  <li key={link.label}>
+                    {link.to ? (
+                      <Link
+                        to={link.to}
+                        className="text-sm text-light hover:text-white transition-colors no-underline"
+                      >
+                        {link.label}
+                      </Link>
+                    ) : (
+                      <span className="text-sm text-light">{link.label}</span>
+                    )}
                   </li>
                 ))}
               </ul>

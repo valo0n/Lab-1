@@ -1,5 +1,6 @@
 /* ProductGrid — shfaq produktet me filter, ngarkuar nga DB */
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import ProductCard from "../../../components/shop/ProductCard";
 import { getProducts } from "../../../lib/api";
 import { SectionHeader } from "./CategoriesStrip";
@@ -13,6 +14,7 @@ export default function ProductGrid({
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -70,7 +72,7 @@ export default function ProductGrid({
         <SectionHeader
           title={title}
           sub={sub}
-          onMore={() => alert("Shiko të gjitha")}
+          onMore={() => navigate("/shop")}
         />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">

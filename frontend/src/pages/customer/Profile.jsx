@@ -47,11 +47,17 @@ export default function Profile() {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const updated = await api.put("/auth/me", {
+        emri_plote: form.emri_plote,
+        telefoni: form.telefoni,
+        user_name: form.user_name,
+      });
+      setProfile(updated);
+      localStorage.setItem("paradox_user", JSON.stringify(updated));
       alert("✅ Të dhënat u përditësuan!");
-      setProfile({ ...profile, ...form });
       setEditMode(false);
     } catch (err) {
-      alert(`Gabim: ${err.message}`);
+      alert(`Gabim: ${err.data?.error || err.message}`);
     } finally {
       setSaving(false);
     }

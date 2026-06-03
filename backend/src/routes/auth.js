@@ -310,4 +310,48 @@ router.get("/me", authenticate, async (req, res) => {
   }
 });
 
+/* ─────────────────────────────────────────────
+   PUT /api/auth/me - Perditeso te dhenat e veta (profili)
+   ───────────────────────────────────────────── */
+router.put("/me", authenticate, async (req, res) => {
+  try {
+    const { emri_plote, telefoni, user_name } = req.body;
+
+    /* Nese ndryshohet username, sigurohu qe nuk eshte i zene nga dikush tjeter */
+    if (user_name) {
+      const existing = await prisma.users.findFirst({
+        where: { user_name, NOT: { id: req.user.id } },
+      });
+      if (existing) {
+        return res.status(409).json({ error: "Username eshte i zene" });
+      }
+    }
+
+    const data = {};
+    if (emri_plote !== undefined) data.emri_plote = emri_plote || null;
+    if (telefoni !== undefined) data.telefoni = telefoni || null;
+    if (user_name !== undefined && user_name !== "") data.user_name = user_name;
+
+    const updated = await prisma.users.update({
+      where: { id: req.user.id },
+      data,
+      include: { user_roles: { include: { roles: true } } },
+    });
+
+    res.json({
+      id: updated.id,
+      user_name: updated.user_name,
+      email: updated.email,
+      emri_plote: updated.emri_plote,
+      telefoni: updated.telefoni,
+      foto_profili: updated.foto_profili,
+      data_regjistrimit: updated.data_regjistrimit,
+      roles: updated.user_roles.map((ur) => ur.roles.name),
+    });
+  } catch (err) {
+    console.error("Update me error:", err);
+    res.status(500).json({ error: "Gabim ne perditesimin e profilit" });
+  }
+});
+
 export default router;

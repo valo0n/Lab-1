@@ -8,7 +8,7 @@ const router = express.Router();
 router.get(
   "/dashboard",
   authenticate,
-  requireRole("Admin"),
+  requireRole("Admin", "Manager"),
   async (req, res) => {
     try {
       /* Produktet */

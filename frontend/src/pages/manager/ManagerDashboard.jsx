@@ -98,7 +98,7 @@ export default function ManagerDashboard() {
                 <div className="bg-white rounded-2xl p-5 shadow-card">
                   <p className="font-black text-dark text-sm">Total Porosi</p>
                   <p className="text-2xl font-black text-dark mt-2">
-                    {stats.orders || 0}
+                    {stats.totalOrders || 0}
                   </p>
                 </div>
                 <div className="bg-white rounded-2xl p-5 shadow-card">
@@ -106,13 +106,13 @@ export default function ManagerDashboard() {
                     Produkte Aktive
                   </p>
                   <p className="text-2xl font-black text-blue-600 mt-2">
-                    {stats.products || products.length}
+                    {stats.totalProducts || products.length}
                   </p>
                 </div>
                 <div className="bg-white rounded-2xl p-5 shadow-card">
                   <p className="font-black text-dark text-sm">Klientë</p>
                   <p className="text-2xl font-black text-warning mt-2">
-                    {stats.customers || 0}
+                    {stats.totalCustomers || 0}
                   </p>
                 </div>
               </div>

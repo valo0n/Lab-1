@@ -16,28 +16,30 @@ export default function Login() {
     setError("");
     setLoading(true);
 
-    try {
-      const userData = await login(email, password);
+    const result = await login(email, password);
 
-      /* Redirect sipas rolit */
-      const roles = userData?.user?.roles || [];
+    setLoading(false);
 
-      if (roles.includes("Admin")) {
-        navigate("/admin");
-      } else if (roles.includes("Manager")) {
-        navigate("/manager");
-      } else if (roles.includes("Teknik")) {
-        navigate("/teknik");
-      } else if (roles.includes("Shites")) {
-        navigate("/shites");
-      } else {
-        /* Klient ose role tjeter */
-        navigate("/");
-      }
-    } catch (err) {
-      setError(err.data?.error || err.message || "Gabim ne login");
-    } finally {
-      setLoading(false);
+    /* login() kthen { success, user } ose { success:false, message } */
+    if (!result.success) {
+      setError(result.message || "Email ose password i gabuar");
+      return;
+    }
+
+    /* Redirect sipas rolit */
+    const roles = result.user?.roles || [];
+
+    if (roles.includes("Admin")) {
+      navigate("/admin");
+    } else if (roles.includes("Manager")) {
+      navigate("/manager");
+    } else if (roles.includes("Teknik")) {
+      navigate("/teknik");
+    } else if (roles.includes("Shites")) {
+      navigate("/shites");
+    } else {
+      /* Klient ose role tjeter */
+      navigate("/");
     }
   };
 

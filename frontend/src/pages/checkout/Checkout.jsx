@@ -82,14 +82,6 @@ export default function Checkout() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  {
-    apiError && (
-      <div className="bg-red-50 border border-red-200 text-danger px-4 py-2 rounded-xl text-sm mb-4">
-        {apiError}
-      </div>
-    );
-  }
-
   /* Validimi i hapit 2 - pagesa */
   const handlePayment = async (e) => {
     e.preventDefault();

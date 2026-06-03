@@ -104,36 +104,41 @@ router.post("/", authenticate, async (req, res) => {
 /* ─────────────────────────────────────────────
    GET /api/orders - Listo te gjitha (Admin)
    ───────────────────────────────────────────── */
-router.get("/", authenticate, requireRole("Admin"), async (req, res) => {
-  try {
-    const { status, search } = req.query;
-    const where = {};
+router.get(
+  "/",
+  authenticate,
+  requireRole("Admin", "Shites", "Manager"),
+  async (req, res) => {
+    try {
+      const { status, search } = req.query;
+      const where = {};
 
-    if (status && status !== "all") where.statusi_porosis = status;
+      if (status && status !== "all") where.statusi_porosis = status;
 
-    if (search) {
-      where.OR = [
-        { customers: { emri: { contains: search } } },
-        { customers: { mbiemri: { contains: search } } },
-        { customers: { email: { contains: search } } },
-      ];
+      if (search) {
+        where.OR = [
+          { customers: { emri: { contains: search } } },
+          { customers: { mbiemri: { contains: search } } },
+          { customers: { email: { contains: search } } },
+        ];
+      }
+
+      const orders = await prisma.orders.findMany({
+        where,
+        include: {
+          customers: true,
+          order_details: { include: { products: true } },
+        },
+        orderBy: { data_porosis: "desc" },
+      });
+
+      res.json(orders);
+    } catch (err) {
+      console.error("Get orders error:", err);
+      res.status(500).json({ error: "Gabim ne marrjen e porosive" });
     }
-
-    const orders = await prisma.orders.findMany({
-      where,
-      include: {
-        customers: true,
-        order_details: { include: { products: true } },
-      },
-      orderBy: { data_porosis: "desc" },
-    });
-
-    res.json(orders);
-  } catch (err) {
-    console.error("Get orders error:", err);
-    res.status(500).json({ error: "Gabim ne marrjen e porosive" });
-  }
-});
+  },
+);
 
 /* ─────────────────────────────────────────────
    GET /api/orders/me - Porosit e mia (klienti)
@@ -198,7 +203,7 @@ router.get("/:id", authenticate, async (req, res) => {
 router.put(
   "/:id/status",
   authenticate,
-  requireRole("Admin"),
+  requireRole("Admin", "Shites"),
   async (req, res) => {
     try {
       const id = parseInt(req.params.id);
