@@ -2,9 +2,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createProduct, getCategories, uploadImage } from "../../lib/api";
+import { useToast } from "../../context/ToastContext";
 
 export default function AddProduct() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [categories, setCategories] = useState([]);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -41,7 +43,7 @@ export default function AddProduct() {
       const { url } = await uploadImage(file);
       setForm((prev) => ({ ...prev, foto_kryesore: url }));
     } catch (err) {
-      alert(`Gabim në ngarkim: ${err.data?.error || err.message}`);
+      showToast(`Gabim në ngarkim: ${err.data?.error || err.message}`, "error");
     } finally {
       setUploading(false);
       e.target.value = ""; // lejo rizgjedhjen e të njëjtit file
@@ -50,7 +52,7 @@ export default function AddProduct() {
 
   const handlePublish = async () => {
     if (!form.emertimi.trim() || !form.cmimi || !form.kategoria_id) {
-      alert("Plotëso Emrin, Çmimin dhe Kategorinë!");
+      showToast("Plotëso Emrin, Çmimin dhe Kategorinë!", "error");
       return;
     }
 
@@ -66,10 +68,10 @@ export default function AddProduct() {
         sasia_stokut: parseInt(form.sasia_stokut) || 0,
         garancia_muaj: parseInt(form.garancia_muaj) || 12,
       });
-      alert(`✅ Produkti "${form.emertimi}" u publikua me sukses!`);
+      showToast(`Produkti "${form.emertimi}" u publikua me sukses!`, "success");
       navigate("/admin/products");
     } catch (err) {
-      alert(`Gabim: ${err.data?.error || err.message}`);
+      showToast(`Gabim: ${err.data?.error || err.message}`, "error");
     } finally {
       setSaving(false);
     }
