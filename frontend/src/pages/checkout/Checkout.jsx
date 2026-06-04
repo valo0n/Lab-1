@@ -1,14 +1,34 @@
-/* Checkout — faqja e pageses */
+/* Checkout — faqja e pageses (Stripe per kartele, test mode) */
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import { useCart } from "../../context/CartContext";
-import { createOrder } from "../../lib/api";
+import { createOrder, createPaymentIntent } from "../../lib/api";
 import Header from "../landing/Header";
 import Footer from "../landing/sections/Footer";
 
+/* Çelësi publik i Stripe — vendose te frontend/.env si VITE_STRIPE_PUBLISHABLE_KEY */
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
 export default function Checkout() {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm />
+    </Elements>
+  );
+}
+
+function CheckoutForm() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const navigate = useNavigate();
+  const stripe = useStripe();
+  const elements = useElements();
 
   /* Form state */
   const [step, setStep] = useState(1); // 1: info, 2: payment, 3: success
@@ -24,10 +44,6 @@ export default function Checkout() {
 
   /* Payment */
   const [paymentMethod, setPaymentMethod] = useState("card");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardHolder, setCardHolder] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvv, setCvv] = useState("");
 
   /* Order ID i gjeneruar */
   const [orderId, setOrderId] = useState("");
@@ -75,37 +91,67 @@ export default function Checkout() {
       !city ||
       !zip
     ) {
-      alert("Plotëso të gjitha fushat!");
+      setApiError("Plotëso të gjitha fushat!");
       return;
     }
+    setApiError("");
     setStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  /* Validimi i hapit 2 - pagesa */
+  /* Hapi 2 - pagesa */
   const handlePayment = async (e) => {
     e.preventDefault();
     setApiError("");
-
-    /* Validim karte */
-    if (paymentMethod === "card") {
-      if (!cardNumber || !cardHolder || !expiry || !cvv) {
-        alert("Plotëso të dhënat e kartës!");
-        return;
-      }
-      if (cardNumber.replace(/\s/g, "").length < 16) {
-        alert("Numri i kartës duhet të ketë 16 shifra!");
-        return;
-      }
-      if (cvv.length < 3) {
-        alert("CVV duhet të ketë 3 shifra!");
-        return;
-      }
-    }
-
     setSubmitting(true);
+
     try {
-      /* Pergatit te dhenat per backend */
+      let transaction_id = null;
+
+      /* Pagesa me kartele permes Stripe */
+      if (paymentMethod === "card") {
+        if (!stripe || !elements) {
+          setApiError(
+            "Stripe nuk u ngarkua. Kontrollo VITE_STRIPE_PUBLISHABLE_KEY te .env.",
+          );
+          setSubmitting(false);
+          return;
+        }
+
+        /* 1) Krijo PaymentIntent ne backend (shuma ne cents) */
+        const { clientSecret } = await createPaymentIntent({
+          amount: Math.round(total * 100),
+        });
+
+        /* 2) Konfirmo pagesen me karten e shtypur */
+        const card = elements.getElement(CardElement);
+        const { error, paymentIntent } = await stripe.confirmCardPayment(
+          clientSecret,
+          {
+            payment_method: {
+              card,
+              billing_details: {
+                name: `${firstName} ${lastName}`,
+                email,
+              },
+            },
+          },
+        );
+
+        if (error) {
+          setApiError(error.message);
+          setSubmitting(false);
+          return;
+        }
+        if (paymentIntent.status !== "succeeded") {
+          setApiError("Pagesa nuk u krye. Provo përsëri.");
+          setSubmitting(false);
+          return;
+        }
+        transaction_id = paymentIntent.id;
+      }
+
+      /* 3) Krijo porosine */
       const items = cartItems.map((item) => ({
         produkti_id: item.id,
         sasia: item.quantity,
@@ -117,9 +163,9 @@ export default function Checkout() {
         adresa_dorezimit: `${address}, ${city}, ${zip}`,
         telefoni: phone,
         metoda_pageses: paymentMethod,
+        transaction_id,
       });
 
-      /* Set order ID dhe shko te hapi 3 */
       setOrderId(result.order.orderId);
       setStep(3);
       clearCart();
@@ -132,21 +178,6 @@ export default function Checkout() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  /* Format card number ne grupe 4-she */
-  const formatCardNumber = (val) => {
-    return val
-      .replace(/\D/g, "")
-      .slice(0, 16)
-      .replace(/(.{4})/g, "$1 ")
-      .trim();
-  };
-
-  const formatExpiry = (val) => {
-    const v = val.replace(/\D/g, "").slice(0, 4);
-    if (v.length >= 3) return v.slice(0, 2) + "/" + v.slice(2);
-    return v;
   };
 
   /* ═══════════ HAPI 3: SUCCESS ═══════════ */
@@ -192,7 +223,7 @@ export default function Checkout() {
                 <span className="text-muted">Pagesa:</span>
                 <span className="font-black text-dark">
                   {paymentMethod === "card"
-                    ? "Kart Krediti"
+                    ? "Kartelë (Stripe)"
                     : paymentMethod === "paypal"
                       ? "PayPal"
                       : "Cash on Delivery"}
@@ -271,6 +302,12 @@ export default function Checkout() {
                 <h2 className="text-xl font-black text-dark mb-5">
                   📍 Adresa e Dorezimit
                 </h2>
+
+                {apiError && (
+                  <div className="bg-red-50 border border-red-200 text-danger px-4 py-2 rounded-xl text-sm mb-4">
+                    {apiError}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -396,10 +433,11 @@ export default function Checkout() {
                     {apiError}
                   </div>
                 )}
+
                 {/* Payment method tabs */}
                 <div className="grid grid-cols-3 gap-2 mb-6">
                   {[
-                    { key: "card", icon: "💳", label: "Kart" },
+                    { key: "card", icon: "💳", label: "Kartelë" },
                     { key: "paypal", icon: "🅿️", label: "PayPal" },
                     { key: "cash", icon: "💵", label: "Cash" },
                   ].map((m) => (
@@ -419,105 +457,50 @@ export default function Checkout() {
                   ))}
                 </div>
 
-                {/* Card form */}
+                {/* Card form (Stripe) */}
                 {paymentMethod === "card" && (
                   <>
-                    {/* Card preview */}
                     <div className="bg-gradient-to-br from-primary via-emerald-500 to-emerald-700 rounded-2xl p-5 text-white mb-5 relative overflow-hidden">
                       <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full bg-white/10"></div>
                       <div className="absolute right-4 top-4 flex">
                         <div className="w-6 h-6 rounded-full bg-white/40"></div>
                         <div className="w-6 h-6 rounded-full bg-white/60 -ml-2"></div>
                       </div>
-
                       <p className="text-lg font-black mb-8">Paradox Tech</p>
-                      <p className="text-lg font-black tracking-widest mb-4">
-                        {cardNumber || "**** **** **** ****"}
+                      <p className="text-lg font-black tracking-widest mb-3">
+                        **** **** **** ****
                       </p>
-
-                      <div className="flex items-end justify-between">
-                        <div>
-                          <p className="text-xs opacity-75 mb-0.5">
-                            Card Holder
-                          </p>
-                          <p className="font-black text-sm">
-                            {cardHolder || "EMRI MBIEMRI"}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs opacity-75 mb-0.5">Expiry</p>
-                          <p className="font-black text-sm">
-                            {expiry || "MM/YY"}
-                          </p>
-                        </div>
-                      </div>
+                      <p className="text-xs opacity-80">
+                        Pagesë e sigurt me Stripe
+                      </p>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-black text-dark mb-2">
-                        Numri i Kartes *
-                      </label>
-                      <input
-                        type="text"
-                        value={cardNumber}
-                        onChange={(e) =>
-                          setCardNumber(formatCardNumber(e.target.value))
-                        }
-                        required
-                        placeholder="1234 5678 9012 3456"
-                        className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
+                    <label className="block text-sm font-black text-dark mb-2">
+                      Të dhënat e kartës *
+                    </label>
+                    <div className="w-full px-4 py-3 border border-bg rounded-xl focus-within:border-primary">
+                      <CardElement
+                        options={{
+                          style: {
+                            base: {
+                              fontSize: "15px",
+                              color: "#1f2937",
+                              "::placeholder": { color: "#9ca3af" },
+                            },
+                            invalid: { color: "#ef4444" },
+                          },
+                        }}
                       />
                     </div>
 
-                    <div className="mt-4">
-                      <label className="block text-sm font-black text-dark mb-2">
-                        Emri ne Karte *
-                      </label>
-                      <input
-                        type="text"
-                        value={cardHolder}
-                        onChange={(e) =>
-                          setCardHolder(e.target.value.toUpperCase())
-                        }
-                        required
-                        placeholder="VALON KRASNIQI"
-                        className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <label className="block text-sm font-black text-dark mb-2">
-                          Skadenca *
-                        </label>
-                        <input
-                          type="text"
-                          value={expiry}
-                          onChange={(e) =>
-                            setExpiry(formatExpiry(e.target.value))
-                          }
-                          required
-                          placeholder="MM/YY"
-                          className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-black text-dark mb-2">
-                          CVV *
-                        </label>
-                        <input
-                          type="text"
-                          value={cvv}
-                          onChange={(e) =>
-                            setCvv(
-                              e.target.value.replace(/\D/g, "").slice(0, 3),
-                            )
-                          }
-                          required
-                          placeholder="123"
-                          className="w-full px-4 py-2.5 border border-bg rounded-xl text-sm outline-none focus:border-primary"
-                        />
-                      </div>
+                    <div className="bg-bg rounded-xl p-3 mt-3 text-xs text-muted leading-relaxed">
+                      🧪 <span className="font-black text-dark">Test mode</span>{" "}
+                      — përdor kartën{" "}
+                      <span className="font-black text-dark">
+                        4242 4242 4242 4242
+                      </span>
+                      , datë skadimi në të ardhmen, CVC çfarëdo (p.sh. 123) dhe
+                      ZIP çfarëdo.
                     </div>
                   </>
                 )}
@@ -549,7 +532,10 @@ export default function Checkout() {
                 <div className="flex gap-3 mt-6">
                   <button
                     type="button"
-                    onClick={() => setStep(1)}
+                    onClick={() => {
+                      setApiError("");
+                      setStep(1);
+                    }}
                     disabled={submitting}
                     className="flex-1 border-2 border-bg text-dark font-black py-3 rounded-xl cursor-pointer hover:bg-bg transition-colors disabled:opacity-50"
                   >
@@ -557,17 +543,21 @@ export default function Checkout() {
                   </button>
                   <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={
+                      submitting || (paymentMethod === "card" && !stripe)
+                    }
                     className="flex-1 bg-primary hover:bg-green-600 text-white font-black py-3 rounded-xl transition-colors border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submitting
-                      ? "Duke krijuar porosine..."
-                      : "Konfirmo Porosine →"}
+                      ? "Duke procesuar..."
+                      : paymentMethod === "card"
+                        ? `Paguaj €${total.toFixed(2)} →`
+                        : "Konfirmo Porosine →"}
                   </button>
                 </div>
 
                 <p className="text-xs text-muted text-center mt-4">
-                  🔒 Pagesa juaj eshte e mbrojtur me enkriptim SSL
+                  🔒 Pagesa juaj eshte e mbrojtur me Stripe
                 </p>
               </form>
             )}

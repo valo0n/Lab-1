@@ -31,6 +31,9 @@ const ProductReviews = lazy(() => import("./pages/admin/ProductReviews"));
 const Suppliers = lazy(() => import("./pages/admin/Suppliers"));
 const Warranties = lazy(() => import("./pages/admin/Warranties"));
 const ServiceRequests = lazy(() => import("./pages/admin/ServiceRequests"));
+const Users = lazy(() => import("./pages/admin/Users"));
+const PurchaseOrders = lazy(() => import("./pages/admin/PurchaseOrders"));
+const Inventory = lazy(() => import("./pages/admin/Inventory"));
 
 const TeknikDashboard = lazy(() => import("./pages/teknik/TeknikDashboard"));
 const ManagerDashboard = lazy(() => import("./pages/manager/ManagerDashboard"));
@@ -86,6 +89,9 @@ function App() {
             <Route path="suppliers" element={<Suppliers />} />
             <Route path="warranties" element={<Warranties />} />
             <Route path="service-requests" element={<ServiceRequests />} />
+            <Route path="users" element={<Users />} />
+            <Route path="purchase-orders" element={<PurchaseOrders />} />
+            <Route path="inventory" element={<Inventory />} />
             <Route path="products" element={<ProductList />} />
             <Route path="products/add" element={<AddProduct />} />
             <Route path="products/media" element={<ProductMedia />} />

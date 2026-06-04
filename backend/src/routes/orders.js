@@ -15,6 +15,7 @@ router.post("/", authenticate, async (req, res) => {
       adresa_dorezimit,
       telefoni,
       metoda_pageses,
+      transaction_id, // nga Stripe (kur paguhet me kartele)
     } = req.body;
 
     if (!items || items.length === 0) {
@@ -84,6 +85,18 @@ router.post("/", authenticate, async (req, res) => {
           data: { sasia_stokut: { decrement: sasia } },
         });
       }
+
+      /* Regjistro pagesen */
+      await tx.payments.create({
+        data: {
+          porosia_id: newOrder.id,
+          shuma: shuma_totale,
+          metoda: metoda_pageses || "cash",
+          statusi:
+            metoda_pageses === "card" && transaction_id ? "paid" : "pending",
+          transaction_id: transaction_id || null,
+        },
+      });
 
       return newOrder;
     });

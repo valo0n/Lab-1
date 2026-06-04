@@ -1,8 +1,9 @@
 /* MyOrders — faqja e porosive te klienti */
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getMyOrders } from "../../lib/api";
+import { getMyOrders, api } from "../../lib/api";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 import Header from "../landing/Header";
 import Footer from "../landing/sections/Footer";
 
@@ -43,10 +44,39 @@ const STATUS_LABELS = {
 
 export default function MyOrders() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const [serviceModal, setServiceModal] = useState(null); // { product, orderId }
+  const [problemText, setProblemText] = useState("");
+  const [submittingService, setSubmittingService] = useState(false);
+
+  const openServiceModal = (product, orderId) => {
+    setServiceModal({ product, orderId });
+    setProblemText("");
+  };
+
+  const submitServiceRequest = async () => {
+    if (!problemText.trim()) {
+      showToast("Përshkruaj problemin e produktit", "error");
+      return;
+    }
+    setSubmittingService(true);
+    try {
+      await api.post("/service-requests", {
+        produkti_id: serviceModal.product.id,
+        pershkrimi_problemit: problemText.trim(),
+      });
+      showToast("Kërkesa për servis u dërgua me sukses!", "success");
+      setServiceModal(null);
+    } catch (err) {
+      showToast(`Gabim: ${err.data?.error || err.message}`, "error");
+    } finally {
+      setSubmittingService(false);
+    }
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -230,32 +260,45 @@ export default function MyOrders() {
                           return (
                             <div
                               key={detail.id}
-                              className="bg-white rounded-xl p-3 flex items-center gap-3"
+                              className="bg-white rounded-xl p-3"
                             >
-                              <div className="w-12 h-12 bg-bg rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
-                                {emoji}
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 bg-bg rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
+                                  {emoji}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-black text-dark text-sm truncate">
+                                    {detail.products?.emertimi}
+                                  </p>
+                                  <p className="text-xs text-muted">
+                                    {detail.products?.marka} · Sasia:{" "}
+                                    {detail.sasia}
+                                  </p>
+                                </div>
+                                <div className="text-right flex-shrink-0">
+                                  <p className="font-black text-primary text-sm">
+                                    €{parseFloat(detail.shuma).toLocaleString()}
+                                  </p>
+                                  <p className="text-xs text-muted">
+                                    €
+                                    {parseFloat(
+                                      detail.cmimi_njesi,
+                                    ).toLocaleString()}{" "}
+                                    × {detail.sasia}
+                                  </p>
+                                </div>
                               </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-black text-dark text-sm truncate">
-                                  {detail.products?.emertimi}
-                                </p>
-                                <p className="text-xs text-muted">
-                                  {detail.products?.marka} · Sasia:{" "}
-                                  {detail.sasia}
-                                </p>
-                              </div>
-                              <div className="text-right flex-shrink-0">
-                                <p className="font-black text-primary text-sm">
-                                  €{parseFloat(detail.shuma).toLocaleString()}
-                                </p>
-                                <p className="text-xs text-muted">
-                                  €
-                                  {parseFloat(
-                                    detail.cmimi_njesi,
-                                  ).toLocaleString()}{" "}
-                                  × {detail.sasia}
-                                </p>
-                              </div>
+                              {(order.statusi_porosis === "completed" ||
+                                order.statusi_porosis === "shipped") && (
+                                <button
+                                  onClick={() =>
+                                    openServiceModal(detail.products, order.id)
+                                  }
+                                  className="mt-3 w-full text-xs font-black text-primary border border-primary/40 rounded-lg py-2 hover:bg-bg cursor-pointer transition-colors"
+                                >
+                                  🔧 Dërgo në servis
+                                </button>
+                              )}
                             </div>
                           );
                         })}
@@ -275,6 +318,54 @@ export default function MyOrders() {
           </div>
         )}
       </main>
+
+      {/* Modal: Dërgo në servis */}
+      {serviceModal && (
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-[9998] p-4"
+          onClick={() => !submittingService && setServiceModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-black text-dark mb-1">
+              🔧 Dërgo në servis
+            </h3>
+            <p className="text-sm text-muted mb-4">
+              {serviceModal.product?.emertimi}
+            </p>
+
+            <label className="block text-sm font-black text-dark mb-2">
+              Përshkruaj problemin
+            </label>
+            <textarea
+              value={problemText}
+              onChange={(e) => setProblemText(e.target.value)}
+              rows={4}
+              placeholder="P.sh. nuk ndizet, ekrani ka probleme, bateria nuk mban..."
+              className="w-full border border-bg rounded-xl px-3 py-2 text-sm outline-none focus:border-primary resize-none mb-4"
+            />
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setServiceModal(null)}
+                disabled={submittingService}
+                className="flex-1 border-2 border-bg text-muted font-black py-2.5 rounded-full hover:bg-bg cursor-pointer transition-colors"
+              >
+                Anulo
+              </button>
+              <button
+                onClick={submitServiceRequest}
+                disabled={submittingService}
+                className="flex-1 bg-primary text-white font-black py-2.5 rounded-full hover:bg-primary/90 cursor-pointer transition-colors disabled:opacity-60"
+              >
+                {submittingService ? "Duke dërguar..." : "Dërgo kërkesën"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

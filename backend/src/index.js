@@ -19,6 +19,10 @@ import suppliersRoutes from "./routes/suppliers.js";
 import serviceRequestsRoutes from "./routes/service-requests.js";
 import warrantiesRoutes from "./routes/warranties.js";
 import uploadRoutes from "./routes/upload.js";
+import paymentsRoutes from "./routes/payments.js";
+import usersRoutes from "./routes/users.js";
+import purchaseOrdersRoutes from "./routes/purchase-orders.js";
+import inventoryRoutes from "./routes/inventory.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -51,6 +55,10 @@ app.use("/api/suppliers", suppliersRoutes);
 app.use("/api/service-requests", serviceRequestsRoutes);
 app.use("/api/warranties", warrantiesRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/payments", paymentsRoutes);
+app.use("/api/users", usersRoutes);
+app.use("/api/purchase-orders", purchaseOrdersRoutes);
+app.use("/api/inventory", inventoryRoutes);
 
 /* 404 handler */
 app.use((req, res) => {

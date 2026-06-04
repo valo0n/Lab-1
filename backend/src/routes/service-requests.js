@@ -1,98 +1,122 @@
-/* Suppliers routes - CRUD per furnitoret */
+/* Service requests routes - kerkesa per servis/riparim */
 import express from "express";
 import prisma from "../lib/prisma.js";
 import { authenticate, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
-/* GET /api/suppliers - Listo te gjithe (Admin) */
+const includeAll = {
+  products: {
+    select: { id: true, emertimi: true, marka: true, foto_kryesore: true },
+  },
+  customers: {
+    select: { id: true, emri: true, mbiemri: true, email: true },
+  },
+  users: { select: { id: true, emri_plote: true } }, // tekniku
+};
+
+/* GET /api/service-requests - te gjitha (Admin, Teknik) */
 router.get(
   "/",
   authenticate,
   requireRole("Admin", "Teknik"),
   async (req, res) => {
     try {
-      const { search } = req.query;
+      const { search, status } = req.query;
       const where = {};
-
+      if (status) where.statusi = status;
       if (search) {
         where.OR = [
-          { emertimi: { contains: search } },
-          { kontakti: { contains: search } },
-          { email: { contains: search } },
+          { pershkrimi_problemit: { contains: search } },
+          { products: { emertimi: { contains: search } } },
+          { customers: { emri: { contains: search } } },
+          { customers: { mbiemri: { contains: search } } },
+          { customers: { email: { contains: search } } },
         ];
       }
 
-      const suppliers = await prisma.suppliers.findMany({
+      const requests = await prisma.service_requests.findMany({
         where,
-        include: {
-          _count: { select: { purchase_orders: true } },
-        },
-        orderBy: { emertimi: "asc" },
+        include: includeAll,
+        orderBy: { data_kerkeses: "desc" },
       });
-
-      res.json(suppliers);
+      res.json(requests);
     } catch (err) {
-      console.error("Get suppliers error:", err);
-      res.status(500).json({ error: "Gabim ne marrjen e furnitoreve" });
+      console.error("Get service requests error:", err);
+      res.status(500).json({ error: "Gabim ne marrjen e kerkesave" });
     }
   },
 );
 
-/* GET /api/suppliers/:id - Nje furnitor */
-router.get(
-  "/:id",
-  authenticate,
-  requireRole("Admin", "Teknik"),
-  async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const supplier = await prisma.suppliers.findUnique({
-        where: { id },
-        include: {
-          purchase_orders: { orderBy: { data_porosis: "desc" }, take: 10 },
-        },
-      });
-
-      if (!supplier)
-        return res.status(404).json({ error: "Furnitori nuk u gjet" });
-      res.json(supplier);
-    } catch (err) {
-      console.error("Get supplier error:", err);
-      res.status(500).json({ error: "Gabim" });
-    }
-  },
-);
-
-/* POST /api/suppliers - Krijo (Admin) */
-router.post("/", authenticate, requireRole("Admin"), async (req, res) => {
+/* GET /api/service-requests/me - kerkesat e klientit te kycur */
+router.get("/me", authenticate, async (req, res) => {
   try {
-    const { emertimi, kontakti, email, telefoni, adresa, vendi } = req.body;
-
-    if (!emertimi) {
-      return res.status(400).json({ error: "Emri eshte i detyrueshem" });
-    }
-
-    const supplier = await prisma.suppliers.create({
-      data: {
-        emertimi,
-        kontakti: kontakti || null,
-        email: email || null,
-        telefoni: telefoni || null,
-        adresa: adresa || null,
-        vendi: vendi || null,
-        aktiv: true,
-      },
+    const customer = await prisma.customers.findFirst({
+      where: { user_id: req.user.id },
     });
+    if (!customer) return res.json([]);
 
-    res.status(201).json({ message: "Furnitori u krijua", supplier });
+    const requests = await prisma.service_requests.findMany({
+      where: { klienti_id: customer.id },
+      include: includeAll,
+      orderBy: { data_kerkeses: "desc" },
+    });
+    res.json(requests);
   } catch (err) {
-    console.error("Create supplier error:", err);
-    res.status(500).json({ error: "Gabim ne krijim" });
+    console.error("Get my service requests error:", err);
+    res.status(500).json({ error: "Gabim" });
   }
 });
 
-/* PUT /api/suppliers/:id - Edito (Admin) */
+/* POST /api/service-requests - klienti dergon produkt ne servis */
+router.post("/", authenticate, async (req, res) => {
+  try {
+    const { produkti_id, pershkrimi_problemit, garancia_id } = req.body;
+
+    if (!produkti_id || !pershkrimi_problemit) {
+      return res.status(400).json({
+        error: "Produkti dhe pershkrimi i problemit jane te detyrueshem",
+      });
+    }
+
+    /* Gjej ose krijo customer-in per kete user */
+    let customer = await prisma.customers.findFirst({
+      where: { user_id: req.user.id },
+    });
+    if (!customer) {
+      const user = await prisma.users.findUnique({
+        where: { id: req.user.id },
+      });
+      const parts = (user.emri_plote || user.user_name || "Klient").split(" ");
+      customer = await prisma.customers.create({
+        data: {
+          user_id: req.user.id,
+          emri: parts[0] || "Klient",
+          mbiemri: parts.slice(1).join(" ") || "-",
+          email: user.email,
+        },
+      });
+    }
+
+    const request = await prisma.service_requests.create({
+      data: {
+        klienti_id: customer.id,
+        produkti_id: parseInt(produkti_id),
+        garancia_id: garancia_id ? parseInt(garancia_id) : null,
+        pershkrimi_problemit,
+        statusi: "pending",
+      },
+      include: includeAll,
+    });
+
+    res.status(201).json({ message: "Kerkesa per servis u dergua", request });
+  } catch (err) {
+    console.error("Create service request error:", err);
+    res.status(500).json({ error: "Gabim ne krijimin e kerkeses" });
+  }
+});
+
+/* PUT /api/service-requests/:id - perditeso statusin/kosto (Admin, Teknik) */
 router.put(
   "/:id",
   authenticate,
@@ -100,41 +124,53 @@ router.put(
   async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const supplier = await prisma.suppliers.update({
+      const { statusi, kostoja, tekniku_id, data_perfundimit } = req.body;
+
+      const data = {};
+      if (statusi !== undefined) data.statusi = statusi;
+      if (kostoja !== undefined)
+        data.kostoja =
+          kostoja === "" || kostoja === null ? null : parseFloat(kostoja);
+      if (data_perfundimit !== undefined)
+        data.data_perfundimit = data_perfundimit
+          ? new Date(data_perfundimit)
+          : null;
+
+      /* Cakto teknikun: ai i derguar, ose vete tekniku i kycur */
+      if (tekniku_id !== undefined) {
+        data.tekniku_id = tekniku_id ? parseInt(tekniku_id) : null;
+      } else if (req.user.roles.includes("Teknik")) {
+        data.tekniku_id = req.user.id;
+      }
+
+      /* Nese behet "completed" dhe s'u dha date, vendose tani */
+      if (statusi === "completed" && data.data_perfundimit === undefined) {
+        data.data_perfundimit = new Date();
+      }
+
+      const request = await prisma.service_requests.update({
         where: { id },
-        data: req.body,
+        data,
+        include: includeAll,
       });
-      res.json({ message: "Furnitori u perditesua", supplier });
+
+      res.json({ message: "Kerkesa u perditesua", request });
     } catch (err) {
-      console.error("Update supplier error:", err);
-      res.status(500).json({ error: "Gabim" });
+      console.error("Update service request error:", err);
+      res.status(500).json({ error: "Gabim ne perditesim" });
     }
   },
 );
 
-/* DELETE /api/suppliers/:id - Fshi (Admin) */
+/* DELETE /api/service-requests/:id (Admin) */
 router.delete("/:id", authenticate, requireRole("Admin"), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-
-    const ordersCount = await prisma.purchase_orders.count({
-      where: { furnitori_id: id },
-    });
-
-    if (ordersCount > 0) {
-      /* Soft delete */
-      await prisma.suppliers.update({
-        where: { id },
-        data: { aktiv: false },
-      });
-    } else {
-      await prisma.suppliers.delete({ where: { id } });
-    }
-
-    res.json({ message: "Furnitori u fshi" });
+    await prisma.service_requests.delete({ where: { id } });
+    res.json({ message: "Kerkesa u fshi" });
   } catch (err) {
-    console.error("Delete supplier error:", err);
-    res.status(500).json({ error: "Gabim" });
+    console.error("Delete service request error:", err);
+    res.status(500).json({ error: "Gabim ne fshirje" });
   }
 });
 

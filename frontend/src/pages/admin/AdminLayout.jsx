@@ -19,6 +19,9 @@ const MENU_ITEMS = [
         label: "Service Requests",
         path: "/admin/service-requests",
       },
+      { icon: "🧾", label: "Purchase Orders", path: "/admin/purchase-orders" },
+      { icon: "📦", label: "Inventory", path: "/admin/inventory" },
+      { icon: "👤", label: "Users", path: "/admin/users" },
     ],
   },
   {

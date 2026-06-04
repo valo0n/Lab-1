@@ -180,6 +180,8 @@ export const getDashboardStats = () => api.get("/stats/dashboard");
    ORDERS API helpers
    ───────────────────────────────────────────── */
 export const createOrder = (data) => api.post("/orders", data);
+export const createPaymentIntent = (data) =>
+  api.post("/payments/create-intent", data);
 export const getOrders = (params = {}) => {
   const query = new URLSearchParams(params).toString();
   return api.get(`/orders${query ? `?${query}` : ""}`);
